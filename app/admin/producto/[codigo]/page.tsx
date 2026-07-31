@@ -125,10 +125,50 @@ export default function AdminEditarProductoPage() {
     fetchMarcas();
   }, []);
 
-  // Kit Components State
+  // Kit Components State & Smart Search
   const [componentes, setComponentes] = useState<ComponenteKit[]>([]);
   const [newCompCode, setNewCompCode] = useState('');
   const [addingComp, setAddingComp] = useState(false);
+  const [compSearchResults, setCompSearchResults] = useState<Filtro[]>([]);
+  const [isSearchingComp, setIsSearchingComp] = useState(false);
+  const [showCompDropdown, setShowCompDropdown] = useState(false);
+
+  // Live Smart Search for Kit component insertion
+  useEffect(() => {
+    const q = newCompCode.trim();
+    if (q.length < 2) {
+      setCompSearchResults([]);
+      setIsSearchingComp(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingComp(true);
+      try {
+        const tokClean = q.toLowerCase().replace(/[-_ ]/g, '');
+        const { data } = await supabase
+          .from('productos_filtrar')
+          .select('*')
+          .or(
+            `codigo_filtrar.ilike.%${tokClean}%,` +
+            `titulo_producto.ilike.%${q}%,` +
+            `descripcion_aplicacion.ilike.%${q}%,` +
+            `equivalencias.ilike.%${q}%`
+          )
+          .limit(6);
+
+        if (data) {
+          setCompSearchResults(data as Filtro[]);
+        }
+      } catch (err) {
+        console.error('Error buscando componentes:', err);
+      } finally {
+        setIsSearchingComp(false);
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [newCompCode]);
 
   // Equivalences State
   const [equivalencias, setEquivalencias] = useState<Equivalencia[]>([]);
@@ -372,33 +412,28 @@ export default function AdminEditarProductoPage() {
     }
   };
 
-  // Add Component to Kit
-  const handleAddComponente = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanCompCode = newCompCode.trim().toUpperCase();
+  // Add Component to Kit (Supports both existing catalog products and new custom codes)
+  const executeAddComponente = async (codeToAdd: string) => {
+    const cleanCompCode = codeToAdd.trim().toUpperCase();
     if (!cleanCompCode) return;
 
+    if (componentes.some((c) => c.codigo_relacionado === cleanCompCode)) {
+      setToast({ id: Date.now().toString(), type: 'error', title: 'Ya está en el kit', message: `El código "${cleanCompCode}" ya forma parte de este kit.` });
+      return;
+    }
+
     setAddingComp(true);
+    setShowCompDropdown(false);
 
     try {
+      // 1. Check if product exists in catalog
       const { data: compProd } = await supabase
         .from('productos_filtrar')
         .select('*')
         .eq('codigo_filtrar', cleanCompCode)
         .maybeSingle();
 
-      if (!compProd) {
-        setToast({ id: Date.now().toString(), type: 'error', title: 'Producto no existe', message: `El código "${cleanCompCode}" no existe en el catálogo.` });
-        setAddingComp(false);
-        return;
-      }
-
-      if (componentes.some((c) => c.codigo_relacionado === cleanCompCode)) {
-        setToast({ id: Date.now().toString(), type: 'error', title: 'Ya está en el kit', message: `El código "${cleanCompCode}" ya forma parte de este kit.` });
-        setAddingComp(false);
-        return;
-      }
-
+      // 2. Insert relation into relaciones_productos
       const newRel = {
         producto_codigo: codigo,
         tipo_relacion: 'CONTIENE_COMPONENTE',
@@ -413,22 +448,50 @@ export default function AdminEditarProductoPage() {
 
       if (error) throw error;
 
+      // 3. Fallback detail if product is not registered in catalog yet
+      const compDetail: Filtro = (compProd as Filtro) || {
+        id: 0,
+        codigo_filtrar: cleanCompCode,
+        titulo_producto: `Filtro ${cleanCompCode}`,
+        categoria: cleanCompCode.startsWith('AF') ? 'Filtros de Aire' : cleanCompCode.startsWith('OF') ? 'Filtros de Aceite' : cleanCompCode.startsWith('FF') ? 'Filtros de Combustible' : cleanCompCode.startsWith('CF') ? 'Filtros de Habitáculo' : 'Componente Kit',
+        marca_filtro: 'Pro Filter',
+        precio: null,
+        equivalencias: null,
+        dimensiones: null,
+        descripcion_aplicacion: null,
+        imagen_url: null,
+      };
+
       const newCompItem: ComponenteKit = {
         id: data.id,
         producto_codigo: codigo,
         tipo_relacion: 'CONTIENE_COMPONENTE',
         codigo_relacionado: cleanCompCode,
-        detalle: compProd as Filtro,
+        detalle: compDetail,
       };
 
       setComponentes((prev) => [...prev, newCompItem]);
       setNewCompCode('');
-      setToast({ id: Date.now().toString(), type: 'success', title: 'Componente agregado al Kit', message: `${cleanCompCode} agregado a ${codigo}.` });
+      setCompSearchResults([]);
+
+      setToast({
+        id: Date.now().toString(),
+        type: 'success',
+        title: 'Componente agregado al Kit',
+        message: compProd
+          ? `${cleanCompCode} agregado correctamente.`
+          : `${cleanCompCode} agregado al kit. (Aún no registrado en catálogo).`,
+      });
     } catch (err: any) {
       setToast({ id: Date.now().toString(), type: 'error', title: 'Error agregando componente', message: err.message });
     } finally {
       setAddingComp(false);
     }
+  };
+
+  const handleAddComponente = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await executeAddComponente(newCompCode);
   };
 
   // Remove Component from Kit
@@ -992,18 +1055,84 @@ export default function AdminEditarProductoPage() {
             </h3>
 
             <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1">
-                <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">
-                  Código de Filtro Componente (ej: AF-010T, OF-711T, FF-010T, CF-390T)
+              <div className="flex-1 relative">
+                <label className="block text-[10px] font-black uppercase text-slate-400 mb-1 flex items-center justify-between">
+                  <span>Buscar o Ingresar Código de Componente (ej: Hilux, AF-010, MANN, etc.)</span>
+                  <span className="text-purple-400 lowercase font-semibold">🔍 Buscador Inteligente + Código Libre</span>
                 </label>
-                <input
-                  type="text"
-                  value={newCompCode}
-                  onChange={(e) => setNewCompCode(e.target.value.toUpperCase())}
-                  placeholder="Ingresá el código exacto del producto componente..."
-                  className="w-full p-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-mono font-bold text-white outline-none focus:border-purple-500 uppercase"
-                  required
-                />
+
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={newCompCode}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewCompCode(val);
+                      setShowCompDropdown(true);
+                    }}
+                    onFocus={() => setShowCompDropdown(true)}
+                    placeholder="Buscá por código, título o modelo, o escribí un código nuevo..."
+                    className="w-full p-3.5 pl-4 pr-10 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-mono font-bold text-white outline-none focus:border-purple-500 uppercase placeholder:normal-case placeholder:text-slate-600"
+                    required
+                  />
+
+                  {isSearchingComp && (
+                    <Loader2 className="w-4 h-4 text-purple-400 animate-spin absolute right-3.5 top-1/2 -translate-y-1/2" />
+                  )}
+                </div>
+
+                {/* DROPDOWN SMART SEARCH DE COMPONENTES */}
+                {showCompDropdown && compSearchResults.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl z-50 overflow-hidden divide-y divide-slate-800 max-h-60 overflow-y-auto">
+                    <div className="p-2.5 bg-slate-950 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex justify-between items-center">
+                      <span>Sugerencias Encontradas ({compSearchResults.length})</span>
+                      <button
+                        type="button"
+                        onClick={() => setShowCompDropdown(false)}
+                        className="text-slate-500 hover:text-white"
+                      >
+                        Cerrar ✕
+                      </button>
+                    </div>
+
+                    {compSearchResults.map((prod) => {
+                      const imgs = normalizarImagenes(prod.imagen_url);
+                      return (
+                        <button
+                          key={prod.id}
+                          type="button"
+                          onClick={() => {
+                            setNewCompCode(prod.codigo_filtrar);
+                            executeAddComponente(prod.codigo_filtrar);
+                          }}
+                          className="w-full p-3 text-left hover:bg-slate-800 transition-colors flex items-center justify-between gap-3 group"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center shrink-0">
+                              {imgs[0] ? (
+                                <img src={imgs[0]} alt={prod.codigo_filtrar} className="w-full h-full object-cover" />
+                              ) : (
+                                <Package className="w-4 h-4 text-slate-600" />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <span className="font-mono font-black text-xs text-white group-hover:text-purple-300 block truncate">
+                                {prod.codigo_filtrar}
+                              </span>
+                              <span className="text-[11px] text-slate-400 font-semibold block truncate">
+                                {prod.titulo_producto || `Filtro ${prod.codigo_filtrar}`}
+                              </span>
+                            </div>
+                          </div>
+
+                          <span className="bg-purple-500/20 text-purple-300 text-[10px] font-bold px-2 py-0.5 rounded border border-purple-500/30 shrink-0">
+                            + Agregar
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-end">
