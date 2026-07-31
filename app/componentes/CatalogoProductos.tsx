@@ -86,7 +86,7 @@ export default function CatalogoProductos({ initialSearch = '', initialCategoria
       setLoading(true);
       try {
         const construirQuery = (tableName: string) => {
-          let q = supabase.from(tableName).select('*', { count: 'exact' });
+          let q = supabase.from(tableName).select('*', { count: 'exact' }).neq('activo', false);
           if (categoriaSeleccionada !== 'TODOS') {
             q = q.eq('categoria', categoriaSeleccionada);
           }

@@ -60,6 +60,9 @@ export default async function ProductoPage({ params }: PageProps) {
   }
 
   const filtro = resProd.data as Filtro;
+  if (filtro.activo === false && !filtro.reemplazo_codigo) {
+    notFound();
+  }
   const codigoActual = filtro.codigo_filtrar || decodedCodigo;
 
   // 1b. Obtener configuración global de ocultar precios

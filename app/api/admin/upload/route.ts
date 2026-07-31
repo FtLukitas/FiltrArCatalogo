@@ -3,42 +3,42 @@ import sharp from 'sharp';
 import { verifyAdminToken, COOKIE_NAME } from '@/lib/auth';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
   throw new Error('Variables de entorno de Supabase faltantes en upload route');
 }
 
-const BUCKET_NAME = 'productos';
+const BUCKET_NAME = 'Fotos';
 
 async function ensureBucketExists() {
-  // Check if bucket exists via REST API
-  const getUrl = `${SUPABASE_URL}/storage/v1/bucket/${BUCKET_NAME}`;
-  const getRes = await fetch(getUrl, {
-    headers: {
-      apikey: SUPABASE_KEY!,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-    },
-  });
-
-  if (getRes.status === 404) {
-    // Bucket does not exist, create it as public
-    const createUrl = `${SUPABASE_URL}/storage/v1/bucket`;
-    await fetch(createUrl, {
-      method: 'POST',
+  try {
+    const getUrl = `${SUPABASE_URL}/storage/v1/bucket/${BUCKET_NAME}`;
+    const getRes = await fetch(getUrl, {
       headers: {
         apikey: SUPABASE_KEY!,
         Authorization: `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        id: BUCKET_NAME,
-        name: BUCKET_NAME,
-        public: true,
-        file_size_limit: 10485760, // 10MB
-        allowed_mime_types: ['image/webp', 'image/jpeg', 'image/png', 'image/gif'],
-      }),
     });
+
+    if (getRes.status === 404) {
+      const createUrl = `${SUPABASE_URL}/storage/v1/bucket`;
+      await fetch(createUrl, {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_KEY!,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: BUCKET_NAME,
+          name: BUCKET_NAME,
+          public: true,
+        }),
+      });
+    }
+  } catch (err) {
+    console.warn('Bucket check error:', err);
   }
 }
 

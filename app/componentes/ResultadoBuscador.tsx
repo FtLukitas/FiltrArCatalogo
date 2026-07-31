@@ -73,6 +73,7 @@ export default function ResultadoBuscador({ initialSearch = '' }: ResultadoBusca
           let { data, error } = await supabase
             .from('productos_filtrar')
             .select('*')
+            .neq('activo', false)
             .range(desde, desde + paso - 1)
             .order('codigo_filtrar');
 

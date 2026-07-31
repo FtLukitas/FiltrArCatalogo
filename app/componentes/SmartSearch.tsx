@@ -59,7 +59,7 @@ export default function SmartSearch({ onSelectProduct, initialValue = '' }: Smar
         const compact = lowerInput.replace(/[-_ ]/g, '');
         const tokens = cleanInput.split(/[-_ ]+/).filter(t => t.length > 0);
 
-        let queryBuilder = supabase.from('productos_filtrar').select('*');
+        let queryBuilder = supabase.from('productos_filtrar').select('*').neq('activo', false);
 
         // CASO 1: Búsqueda Multi-Palabra (ej: "aceite fiat 600", "filtro aire peugeot 206", "wega daf100")
         if (tokens.length > 1) {
