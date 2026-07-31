@@ -88,6 +88,7 @@ export default function AdminEditarProductoPage() {
   const [descripcion, setDescripcion] = useState('');
   const [imagenUrl, setImagenUrl] = useState('');
   const [activo, setActivo] = useState(true);
+  const [ocultarPrecio, setOcultarPrecio] = useState(false);
 
   // Cargar marcas dinámicamente desde la base de datos
   useEffect(() => {
@@ -181,6 +182,7 @@ export default function AdminEditarProductoPage() {
       setDimensiones(p.dimensiones || '');
       setDescripcion(p.descripcion_aplicacion || '');
       setActivo(p.activo !== false);
+      setOcultarPrecio(p.ocultar_precio === true);
 
       const imgs = Array.isArray(p.imagen_url)
         ? p.imagen_url[0]
@@ -336,6 +338,7 @@ export default function AdminEditarProductoPage() {
         descripcion_aplicacion: descripcion.trim() || null,
         imagen_url: (imagenUrl && imagenUrl !== 'preview' && imagenUrl.trim()) ? [imagenUrl.trim()] : null,
         activo,
+        ocultar_precio: ocultarPrecio,
       };
 
       const { error } = await supabase
@@ -852,6 +855,24 @@ export default function AdminEditarProductoPage() {
                 onImageUploaded={(url) => setImagenUrl(url)}
                 onImageRemoved={() => setImagenUrl('')}
               />
+
+              {/* OCULTAR PRECIO INDIVIDUAL */}
+              <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-black text-white block">Ocultar Precio en Web Pública</span>
+                  <span className="text-[11px] text-slate-400 font-semibold block">Si se activa, mostrará "Consultar Precio" en lugar del valor numérico.</span>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={ocultarPrecio}
+                    onChange={(e) => setOcultarPrecio(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:translate-x-full peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+              </div>
 
               <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
                 <div>

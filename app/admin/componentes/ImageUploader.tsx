@@ -158,7 +158,7 @@ export default function ImageUploader({
                   Arrastrá una imagen o hacé click para seleccionar
                 </span>
                 <span className="text-[11px] font-semibold text-slate-500 block mt-0.5">
-                  Soporta JPG, PNG, WEIC, BMP. Se comprime a WebP automáticamente.
+                  Soporta JPG, PNG, HEIC, BMP. Se comprime a WebP automáticamente.
                 </span>
               </div>
             </div>

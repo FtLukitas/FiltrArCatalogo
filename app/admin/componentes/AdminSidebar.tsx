@@ -42,7 +42,7 @@ export default function AdminSidebar() {
   };
 
   return (
-    <aside className="w-64 bg-slate-950 text-slate-300 border-r border-slate-800 flex flex-col justify-between shrink-0 min-h-screen sticky top-0 h-screen overflow-y-auto">
+    <aside className="w-64 bg-slate-950 text-slate-300 border-r border-slate-800 flex flex-col justify-between shrink-0 fixed top-0 left-0 h-screen z-50 overflow-y-auto shadow-2xl">
       <div>
         {/* BRAND HEADER */}
         <div className="p-6 border-b border-slate-800/80 flex items-center justify-between">

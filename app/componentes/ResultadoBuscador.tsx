@@ -95,13 +95,13 @@ export default function ResultadoBuscador({ initialSearch = '' }: ResultadoBusca
 
         if (todosLosProductos.length > 0) {
           const datosNormalizados = todosLosProductos.map((item: any) => {
-            const cod = item.codigo_filtrar || item.codigo_fhl || String(item.id || '');
+            const cod = item.codigo_filtrar || String(item.id || '');
             return {
               ...item,
               codigo_filtrar: cod,
-              titulo_producto: item.titulo_producto || item.titulo || `Filtro ${cod}`,
-              descripcion_aplicacion: item.descripcion_aplicacion || item.descripcion || null,
-              imagen_url: item.imagen_url || item.imagen
+              titulo_producto: item.titulo_producto || `Filtro ${cod}`,
+              descripcion_aplicacion: item.descripcion_aplicacion || null,
+              imagen_url: item.imagen_url
             };
           });
 
@@ -120,7 +120,7 @@ export default function ResultadoBuscador({ initialSearch = '' }: ResultadoBusca
   // Filtrado reactivo multivariable UNIFICADO
   const productosFiltrados = useMemo(() => {
     return productos.filter(p => {
-      const code = (p.codigo_filtrar || (p as any).codigo_fhl || '').toLowerCase();
+      const code = (p.codigo_filtrar || '').toLowerCase();
       const title = (p.titulo_producto || '').toLowerCase();
       const app = (p.descripcion_aplicacion || '').toLowerCase();
       const equiv = (p.equivalencias || '').toLowerCase();

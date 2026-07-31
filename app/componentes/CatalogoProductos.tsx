@@ -110,21 +110,17 @@ export default function CatalogoProductos({ initialSearch = '', initialCategoria
           return q.range(desde, hasta);
         };
 
-        let res = await construirQuery('productos_filtrar');
-
-        if (res.error) {
-          res = await construirQuery('Tabla A');
-        }
+        const res = await construirQuery('productos_filtrar');
 
         if (!res.error && res.data) {
           const datosNormalizados = res.data.map((item: any) => {
-            const cod = item.codigo_filtrar || item.codigo_fhl || String(item.id || '');
+            const cod = item.codigo_filtrar || String(item.id || '');
             return {
               ...item,
               codigo_filtrar: cod,
-              titulo_producto: item.titulo_producto || item.titulo || `Filtro ${cod}`,
-              descripcion_aplicacion: item.descripcion_aplicacion || item.descripcion || null,
-              imagen_url: item.imagen_url || item.imagen
+              titulo_producto: item.titulo_producto || `Filtro ${cod}`,
+              descripcion_aplicacion: item.descripcion_aplicacion || null,
+              imagen_url: item.imagen_url
             };
           });
 

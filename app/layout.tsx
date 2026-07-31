@@ -8,6 +8,11 @@ export const metadata: Metadata = {
   title: 'FiltrAr - Catálogo Profesional e Industrial de Filtros',
   description: 'Catálogo técnico de filtros de aceite, aire, combustible y habitáculo. Búsqueda por vehículo, código FHL y equivalencias OEM en Argentina.',
   keywords: ['filtros', 'catalogo filtros', 'maxfil', 'pro filter', 'filtros aceite', 'filtros aire', 'equivalencias filtros', 'vehiculos'],
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
 };
 
 export default function RootLayout({

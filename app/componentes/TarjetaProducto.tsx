@@ -1,19 +1,22 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { 
-  ArrowRight, 
-  Wind, 
-  Droplet, 
-  Fuel, 
-  Sparkles, 
-  Boxes, 
+import {
+  ArrowRight,
+  Wind,
+  Droplet,
+  Fuel,
+  Sparkles,
+  Boxes,
   AlertTriangle,
   Layers,
-  Tag
+  Tag,
+  MessageCircle
 } from 'lucide-react';
 import type { Filtro } from '@/lib/types';
-import { normalizarImagenes, formatearPrecio } from '@/lib/utils';
+import { normalizarImagenes, formatearPrecio, generarUrlWhatsapp } from '@/lib/utils';
+import { getOcultarPreciosGlobal, debeOcultarPrecio } from '@/lib/preciosConfig';
 
 interface TarjetaProductoProps {
   filtro: Filtro;
@@ -22,7 +25,7 @@ interface TarjetaProductoProps {
 // Configuración de temas visuales según la categoría del filtro
 function obtenerTemaCategoria(categoriaRaw: string | null) {
   const cat = (categoriaRaw || '').toLowerCase();
-  
+
   if (cat.includes('aceite')) {
     return {
       gradient: 'from-amber-600 via-amber-700 to-slate-900',
@@ -79,18 +82,31 @@ function obtenerTemaCategoria(categoriaRaw: string | null) {
 }
 
 export default function TarjetaProducto({ filtro }: TarjetaProductoProps) {
+  const [ocultarGlobal, setOcultarGlobal] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const local = localStorage.getItem('filtrar_ocultar_precios_global');
+      if (local !== null) return local === 'true';
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    getOcultarPreciosGlobal().then(setOcultarGlobal);
+  }, []);
+
   const imagenes = normalizarImagenes(filtro.imagen_url);
   const imagenPrincipal = imagenes.length > 0 ? imagenes[0] : null;
   const tema = obtenerTemaCategoria(filtro.categoria);
   const IconoCategoria = tema.icon;
   const estaDiscontinuado = filtro.activo === false && Boolean(filtro.reemplazo_codigo);
+  const ocultarPrecioFinal = debeOcultarPrecio(filtro, ocultarGlobal);
 
   // Título exacto del producto desde la columna titulo_producto de la BD
   const tituloProductoExacto = filtro.titulo_producto || `Filtro ${filtro.codigo_filtrar}`;
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 hover:border-blue-500/80 hover:shadow-lg transition-all duration-300 flex flex-col h-full overflow-hidden group relative">
-      
+
       {/* BADGE DE REEMPLAZO SI ESTÁ DISCONTINUADO */}
       {estaDiscontinuado && (
         <div className="bg-amber-500 text-slate-950 text-[10px] font-black uppercase tracking-wider px-3 py-1 flex items-center justify-between z-20">
@@ -107,14 +123,14 @@ export default function TarjetaProducto({ filtro }: TarjetaProductoProps) {
       )}
 
       {/* HEADER DE LA TARJETA: FOTO O BLUEPRINT TÉCNICO */}
-      <Link 
+      <Link
         href={`/producto/${encodeURIComponent(filtro.codigo_filtrar)}`}
         className="relative block overflow-hidden group/image"
       >
         {imagenPrincipal ? (
           /* CON FOTO: HEADER CON CÓDIGO EN BADGE PEQUEÑO EN LA ESQUINA */
           <div className="p-4 bg-slate-50/80 h-44 flex items-center justify-center relative transition-colors group-hover/image:bg-blue-50/30">
-            
+
             {/* BADGE DE CÓDIGO PEQUEÑO EN LA MINIATURA */}
             <div className="absolute top-3 left-3 z-10">
               <span className="text-[10px] font-mono font-black uppercase tracking-wider bg-slate-900 text-white px-2 py-0.5 rounded-md shadow-sm border border-slate-800 flex items-center gap-1">
@@ -142,9 +158,9 @@ export default function TarjetaProducto({ filtro }: TarjetaProductoProps) {
         ) : (
           /* SIN FOTO: BANNER BLUEPRINT CON CÓDIGO Y TÍTULO MOSTRADOS DE FORMA TÉCNICA */
           <div className={`h-44 bg-gradient-to-br ${tema.gradient} p-4 flex flex-col justify-between relative text-white overflow-hidden`}>
-            
+
             {/* PATRÓN RETÍCULA TÉCNICA DE FONDO */}
-            <div 
+            <div
               className="absolute inset-0 opacity-15 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:12px_12px] pointer-events-none"
             />
 
@@ -187,9 +203,9 @@ export default function TarjetaProducto({ filtro }: TarjetaProductoProps) {
 
       {/* CUERPO DE LA TARJETA: EL TÍTULO ES STRICTAMENTE titulo_producto */}
       <div className="p-3.5 flex flex-col flex-grow bg-white">
-        
+
         {/* TÍTULO PRINCIPAL DE LA TARJETA (COLUMNA titulo_producto DE LA BD) */}
-        <Link 
+        <Link
           href={`/producto/${encodeURIComponent(filtro.codigo_filtrar)}`}
           className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors tracking-tight mb-1 line-clamp-2 leading-snug"
         >
@@ -242,17 +258,29 @@ export default function TarjetaProducto({ filtro }: TarjetaProductoProps) {
           <div className="flex flex-col">
             <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Precio Lista</span>
             <span className="text-sm font-black text-slate-900">
-              {formatearPrecio(filtro.precio)}
+              {formatearPrecio(filtro.precio, ocultarPrecioFinal)}
             </span>
           </div>
 
-          <Link
-            href={`/producto/${encodeURIComponent(filtro.codigo_filtrar)}`}
-            className="bg-slate-900 hover:bg-blue-600 text-white font-bold px-3 py-1.5 rounded-md text-xs flex items-center gap-1 transition-all shadow-sm active:scale-95 group/btn"
-          >
-            <span>Ver Ficha</span>
-            <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-0.5 transition-transform" />
-          </Link>
+          <div className="flex items-center gap-1.5">
+            <a
+              href={generarUrlWhatsapp(filtro.codigo_filtrar, tituloProductoExacto)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white p-2 rounded-md transition-all shadow-sm active:scale-95 flex items-center justify-center border border-emerald-400/30"
+              title={`Consultar por ${filtro.codigo_filtrar} en WhatsApp`}
+            >
+              <MessageCircle className="w-3.5 h-3.5 fill-white text-emerald-600" />
+            </a>
+
+            <Link
+              href={`/producto/${encodeURIComponent(filtro.codigo_filtrar)}`}
+              className="bg-slate-900 hover:bg-blue-600 text-white font-bold px-3 py-1.5 rounded-md text-xs flex items-center gap-1 transition-all shadow-sm active:scale-95 group/btn"
+            >
+              <span>Ver Ficha</span>
+              <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-0.5 transition-transform" />
+            </Link>
+          </div>
         </div>
 
       </div>

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { Filtro, ResultadoVehiculo } from '@/lib/types';
 import VisorImagenes from '@/app/componentes/VisorImagenes';
+import PrecioDetalleProducto from '@/app/componentes/PrecioDetalleProducto';
 import { extraerMedida, parsearDimensiones, formatearPrecio, generarUrlWhatsapp } from '@/lib/utils';
 import { 
   ArrowLeft, 
@@ -17,7 +18,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 
-export const revalidate = 3600; // Cache public product page for 1 hour
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ codigo: string }>;
@@ -60,6 +61,16 @@ export default async function ProductoPage({ params }: PageProps) {
 
   const filtro = resProd.data as Filtro;
   const codigoActual = filtro.codigo_filtrar || decodedCodigo;
+
+  // 1b. Obtener configuración global de ocultar precios
+  let { data: configPrecios } = await supabase
+    .from('configuracion_catalogo')
+    .select('valor')
+    .eq('clave', 'ocultar_precios_global')
+    .maybeSingle();
+
+  const ocultarGlobal = configPrecios?.valor === 'true';
+  const ocultarPrecioFinal = Boolean(ocultarGlobal || filtro.ocultar_precio === true || filtro.precio === null || filtro.precio === undefined || filtro.precio <= 0);
 
   // 2. Obtener vehículos compatibles desde vehiculos_filtrar
   let resVeh = await supabase
@@ -180,9 +191,6 @@ export default async function ProductoPage({ params }: PageProps) {
                       Marca: {filtro.marca_filtro}
                     </span>
                   )}
-                  <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold px-2.5 py-1 rounded-md flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Stock Disponible
-                  </span>
                 </div>
 
                 {/* TÍTULO PRINCIPAL DEL PRODUCTO */}
@@ -259,27 +267,12 @@ export default async function ProductoPage({ params }: PageProps) {
 
               </div>
 
-              {/* BLOQUE PRECIO Y ACCIONES */}
-              <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mt-2">
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Precio de Lista Sugerido</span>
-                  <span className="text-2xl sm:text-3xl font-black text-slate-900">
-                    {formatearPrecio(filtro.precio)}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 sm:flex-initial bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold px-5 py-3 rounded-lg text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 border border-emerald-400/30"
-                  >
-                    <MessageCircle className="w-4 h-4 fill-white text-emerald-600" />
-                    <span>Consultar por WhatsApp</span>
-                  </a>
-                </div>
-              </div>
+              {/* BLOQUE PRECIO Y ACCIONES (CLIENT SYNCED) */}
+              <PrecioDetalleProducto
+                filtro={filtro}
+                ocultarGlobalInicial={ocultarGlobal}
+                whatsappUrl={whatsappUrl}
+              />
 
             </div>
 

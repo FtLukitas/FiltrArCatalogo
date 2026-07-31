@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { jwtVerify } from 'jose';
 import sharp from 'sharp';
+import { verifyAdminToken, COOKIE_NAME } from '@/lib/auth';
 
-const ADMIN_SECRET = new TextEncoder().encode(
-  process.env.ADMIN_SECRET || 'filtrar_catalogo_admin_secret_key_2026_super_secure_jwt'
-);
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://qrqqnutkldmtyljtgwxm.supabase.co';
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_1MBkgDvheN7CvACrA1vyrg_Ibs1I5Ln';
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  throw new Error('Variables de entorno de Supabase faltantes en upload route');
+}
 
 const BUCKET_NAME = 'productos';
 
@@ -16,7 +16,7 @@ async function ensureBucketExists() {
   const getUrl = `${SUPABASE_URL}/storage/v1/bucket/${BUCKET_NAME}`;
   const getRes = await fetch(getUrl, {
     headers: {
-      apikey: SUPABASE_KEY,
+      apikey: SUPABASE_KEY!,
       Authorization: `Bearer ${SUPABASE_KEY}`,
     },
   });
@@ -27,7 +27,7 @@ async function ensureBucketExists() {
     await fetch(createUrl, {
       method: 'POST',
       headers: {
-        apikey: SUPABASE_KEY,
+        apikey: SUPABASE_KEY!,
         Authorization: `Bearer ${SUPABASE_KEY}`,
         'Content-Type': 'application/json',
       },
@@ -44,15 +44,9 @@ async function ensureBucketExists() {
 
 export async function POST(req: NextRequest) {
   // Check auth
-  const token = req.cookies.get('admin_session')?.value;
-  if (!token) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-  }
-
-  try {
-    await jwtVerify(token, ADMIN_SECRET);
-  } catch {
-    return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 });
+  const token = req.cookies.get(COOKIE_NAME)?.value;
+  if (!token || !(await verifyAdminToken(token))) {
+    return NextResponse.json({ error: 'No autorizado / Sesión inválida' }, { status: 401 });
   }
 
   try {
@@ -94,7 +88,7 @@ export async function POST(req: NextRequest) {
     const uploadRes = await fetch(uploadUrl, {
       method: 'POST',
       headers: {
-        apikey: SUPABASE_KEY,
+        apikey: SUPABASE_KEY!,
         Authorization: `Bearer ${SUPABASE_KEY}`,
         'Content-Type': 'image/webp',
         'x-upsert': 'true',

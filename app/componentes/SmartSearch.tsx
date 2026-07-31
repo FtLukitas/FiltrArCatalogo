@@ -7,6 +7,7 @@ import { Search, Loader2, Sparkles, ArrowRight, Package } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { Filtro } from '@/lib/types';
 import { normalizarImagenes, formatearPrecio } from '@/lib/utils';
+import { getOcultarPreciosGlobal, debeOcultarPrecio } from '@/lib/preciosConfig';
 
 interface SmartSearchProps {
   onSelectProduct?: (codigo: string) => void;
@@ -21,6 +22,11 @@ export default function SmartSearch({ onSelectProduct, initialValue = '' }: Smar
   const [focused, setFocused] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const [ocultarGlobal, setOcultarGlobal] = useState(false);
+
+  useEffect(() => {
+    getOcultarPreciosGlobal().then(setOcultarGlobal);
+  }, []);
 
   // Actualizar si cambia initialValue
   useEffect(() => {
@@ -95,16 +101,7 @@ export default function SmartSearch({ onSelectProduct, initialValue = '' }: Smar
           queryBuilder = queryBuilder.or(orConds.join(','));
         }
 
-        let res = await queryBuilder.limit(8);
-
-        // Fallback por compatibilidad a Tabla A si hiciera falta
-        if (res.error) {
-          res = await supabase
-            .from('Tabla A')
-            .select('*')
-            .or(`codigo_fhl.ilike.%${compact}%,buscador_unificado.ilike.%${compact}%`)
-            .limit(8);
-        }
+        const res = await queryBuilder.limit(8);
 
         if (!res.error && res.data) {
           setResults(res.data as Filtro[]);
@@ -221,7 +218,7 @@ export default function SmartSearch({ onSelectProduct, initialValue = '' }: Smar
               </div>
               <div className="divide-y divide-slate-100">
                 {results.map((item) => {
-                  const codigo = item.codigo_filtrar || (item as any).codigo_fhl;
+                  const codigo = item.codigo_filtrar;
                   const imgs = normalizarImagenes(item.imagen_url);
                   const thumb = imgs.length > 0 ? imgs[0] : null;
 
@@ -273,7 +270,7 @@ export default function SmartSearch({ onSelectProduct, initialValue = '' }: Smar
                       {/* ACCIÓN */}
                       <div className="flex items-center gap-3 shrink-0 ml-4">
                         <span className="text-sm font-black text-slate-700 hidden sm:inline">
-                          {formatearPrecio(item.precio)}
+                          {formatearPrecio(item.precio, debeOcultarPrecio(item, ocultarGlobal))}
                         </span>
                         <div className="w-8 h-8 rounded-full bg-slate-100 group-hover:bg-blue-600 text-slate-500 group-hover:text-white flex items-center justify-center transition-all">
                           <ArrowRight className="w-4 h-4" />

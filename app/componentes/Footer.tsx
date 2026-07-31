@@ -11,7 +11,7 @@ export default function Footer() {
   return (
     <footer className="bg-slate-950 text-slate-400 border-t border-slate-800/80 pt-16 pb-12 mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-12">
 
           {/* COL 1: MARCA */}
           <div className="space-y-4">
@@ -37,7 +37,7 @@ export default function Footer() {
           </div>
 
           {/* COL 2: NAVEGACIÓN RÁPIDA */}
-          <div>
+          <div className="md:justify-self-center">
             <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4 border-l-2 border-blue-500 pl-2">
               Navegación
             </h4>
@@ -63,33 +63,8 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* COL 3: MARCAS Y LÍNEAS */}
-          <div>
-            <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4 border-l-2 border-blue-500 pl-2">
-              Líneas Disponibles
-            </h4>
-            <ul className="space-y-2 text-xs font-medium">
-              <li className="flex items-center justify-between">
-                <span>Filtros de Aceite</span>
-                <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">Maxfil / Pro Filter</span>
-              </li>
-              <li className="flex items-center justify-between">
-                <span>Filtros de Aire</span>
-                <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">Pro Filter AF</span>
-              </li>
-              <li className="flex items-center justify-between">
-                <span>Filtros de Combustible</span>
-                <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">Pro Filter OF-FF</span>
-              </li>
-              <li className="flex items-center justify-between">
-                <span>Habitáculo</span>
-                <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">Linea MDH</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* COL 4: CONTACTO */}
-          <div>
+          {/* COL 3: CONTACTO */}
+          <div className="md:justify-self-end">
             <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4 border-l-2 border-blue-500 pl-2">
               Contacto & Soporte
             </h4>
@@ -98,10 +73,15 @@ export default function Footer() {
                 <MapPin className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
                 <span>Distribución a todo el país. Buenos Aires, Argentina.</span>
               </div>
-              <div className="flex items-center gap-2.5">
+              <a
+                href="https://wa.me/5491132881901?text=Hola!%20Quisiera%20hacer%20una%20consulta%20comercial%20desde%20el%20cat%C3%A1logo%20FiltrAr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2.5 hover:text-blue-400 transition-colors"
+              >
                 <Phone className="w-4 h-4 text-blue-400 shrink-0" />
-                <span>Atención Comercial: +54 9 11 2345-6789</span>
-              </div>
+                <span>Atención Comercial: +54 9 11 3288-1901</span>
+              </a>
               <div className="flex items-center gap-2.5">
                 <Mail className="w-4 h-4 text-blue-400 shrink-0" />
                 <span>ventas@filtrar.com.ar</span>

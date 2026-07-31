@@ -125,8 +125,11 @@ export const normalizarBusqueda = (texto: string): string => {
   return texto.replace(/[- ]/g, '').toLowerCase();
 };
 
-// Formato de moneda ARS
-export const formatearPrecio = (precio: number | null): string => {
+// Formato de moneda ARS (soporta ocultamiento explícito)
+export const formatearPrecio = (precio: number | null | undefined, ocultar?: boolean): string => {
+  if (ocultar) {
+    return 'Consultar Precio';
+  }
   if (precio === null || precio === undefined || isNaN(precio) || precio <= 0) {
     return 'Consultar Precio';
   }
@@ -139,9 +142,16 @@ export const formatearPrecio = (precio: number | null): string => {
 
 // Crear URL de WhatsApp para consulta de producto
 export const generarUrlWhatsapp = (codigoFiltrar: string, titulo?: string | null): string => {
-  const numero = '5491123456789';
+  const numero = '5491132881901';
+  let textoProducto = codigoFiltrar;
+  if (titulo && titulo.trim() && !titulo.toLowerCase().includes(codigoFiltrar.toLowerCase())) {
+    textoProducto = `${codigoFiltrar} (${titulo.trim()})`;
+  } else if (titulo && titulo.trim()) {
+    textoProducto = titulo.trim();
+  }
+
   const mensaje = encodeURIComponent(
-    `Hola! Quisiera realizar una consulta sobre el filtro ${codigoFiltrar}${titulo ? ` (${titulo})` : ''} del catálogo FiltrAr.`
+    `Hola! Quisiera realizar una consulta sobre el filtro ${textoProducto} del catálogo FiltrAr.`
   );
   return `https://wa.me/${numero}?text=${mensaje}`;
 };

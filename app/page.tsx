@@ -50,7 +50,7 @@ export default function HomePage() {
           </div>
 
           {/* TARJETAS DE SERVICIO DISTRIBUIDORA */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto mt-12 sm:mt-16 text-left border-t border-slate-800/80 pt-6 sm:pt-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 max-w-3xl mx-auto mt-12 sm:mt-16 text-left border-t border-slate-800/80 pt-6 sm:pt-8">
             <div className="bg-slate-900/80 backdrop-blur-md p-3.5 sm:p-4 rounded-2xl border border-slate-800 flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
                 <Package className="w-5 h-5 text-blue-400" />
@@ -68,16 +68,6 @@ export default function HomePage() {
               <div>
                 <span className="text-[11px] sm:text-xs font-black text-white block">Cruces Directos</span>
                 <span className="text-[10px] text-slate-400 font-semibold block">Todas las Marcas</span>
-              </div>
-            </div>
-
-            <div className="bg-slate-900/80 backdrop-blur-md p-3.5 sm:p-4 rounded-2xl border border-slate-800 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                <Truck className="w-5 h-5 text-emerald-400" />
-              </div>
-              <div>
-                <span className="text-[11px] sm:text-xs font-black text-white block">Envíos Rápidos</span>
-                <span className="text-[10px] text-slate-400 font-semibold block">A Todo el País</span>
               </div>
             </div>
 

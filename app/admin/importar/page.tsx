@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
   FileSpreadsheet,
@@ -16,6 +16,14 @@ import {
   Layers,
   Sparkles,
   RefreshCw,
+  BookOpen,
+  HelpCircle,
+  Info,
+  ListChecks,
+  Zap,
+  ChevronDown,
+  ChevronUp,
+  ShieldCheck,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabase';
@@ -51,6 +59,12 @@ export default function AdminImportarPage() {
   const [importLog, setImportLog] = useState<string | null>(null);
 
   const [toast, setToast] = useState<ToastMessage | null>(null);
+
+  // Tutorial State
+  const [tutorialOpen, setTutorialOpen] = useState(true);
+  const [activeTutorialTab, setActiveTutorialTab] = useState<'pasos' | 'columnas' | 'equivalencias' | 'faq'>('pasos');
+
+
 
   // 1. GENERAR Y DESCARGAR PLANTILLA EXCEL / CSV
   const handleDescargarPlantilla = (format: 'csv' | 'xlsx') => {
@@ -262,6 +276,8 @@ export default function AdminImportarPage() {
 
         // Mapear equivalencias cruzadas estructuradas en equivalencias_cruza
         const equivalenciasBatch: any[] = [];
+        const chunkCodes = chunk.map((r) => r.codigo_filtrar);
+
         chunk.forEach((r) => {
           if (r.equivalencias) {
             const itemsEq = parsearEquivalenciasTexto(r.equivalencias);
@@ -275,6 +291,13 @@ export default function AdminImportarPage() {
             });
           }
         });
+
+        if (chunkCodes.length > 0) {
+          await supabase
+            .from('equivalencias_cruza')
+            .delete()
+            .in('producto_codigo', chunkCodes);
+        }
 
         if (equivalenciasBatch.length > 0) {
           await supabase
@@ -399,6 +422,387 @@ export default function AdminImportarPage() {
           </div>
         </div>
       )}
+
+      {/* TUTORIAL EXTENSO DE IMPORTACIÓN */}
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl transition-all">
+        {/* TUTORIAL HEADER */}
+        <div className="p-6 bg-slate-950/80 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-400">
+              <BookOpen className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-base font-black text-white tracking-tight flex items-center gap-2">
+                <span>GUÍA COMPLETA Y TUTORIAL DE IMPORTACIÓN</span>
+                <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-mono font-extrabold uppercase px-2.5 py-0.5 rounded-full">
+                  Paso a Paso
+                </span>
+              </h2>
+              <p className="text-xs font-semibold text-slate-400 mt-0.5">
+                Aprendé a estructurar tu archivo de Excel o CSV para cargar o actualizar cientos de datos sin errores.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setTutorialOpen(!tutorialOpen)}
+            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white font-extrabold text-xs rounded-xl flex items-center gap-2 transition-all shrink-0 self-start sm:self-auto"
+          >
+            <span>{tutorialOpen ? 'Ocultar Tutorial' : 'Ver Tutorial Completo'}</span>
+            {tutorialOpen ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+          </button>
+        </div>
+
+        {/* TUTORIAL BODY (EXPANDABLE) */}
+        {tutorialOpen && (
+          <div className="p-6 space-y-6 animate-fade-in">
+            {/* TABS NAVEGACIÓN TUTORIAL */}
+            <div className="flex items-center gap-2 border-b border-slate-800 pb-3 overflow-x-auto no-scrollbar">
+              <button
+                onClick={() => setActiveTutorialTab('pasos')}
+                className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 shrink-0 ${
+                  activeTutorialTab === 'pasos'
+                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                }`}
+              >
+                <ListChecks className="w-4 h-4" />
+                <span>1. Paso a Paso (Guía Rápida)</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTutorialTab('columnas')}
+                className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 shrink-0 ${
+                  activeTutorialTab === 'columnas'
+                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                }`}
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                <span>2. Columnas Aceptadas</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTutorialTab('equivalencias')}
+                className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 shrink-0 ${
+                  activeTutorialTab === 'equivalencias'
+                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                }`}
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span>3. Formato Equivalencias & Vehículos</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTutorialTab('faq')}
+                className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 shrink-0 ${
+                  activeTutorialTab === 'faq'
+                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                }`}
+              >
+                <HelpCircle className="w-4 h-4" />
+                <span>4. Preguntas Frecuentes (FAQ)</span>
+              </button>
+            </div>
+
+            {/* TAB 1: PASOS SENCILLOS Y RÁPIDOS */}
+            {activeTutorialTab === 'pasos' && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 animate-fade-in">
+                {/* PASO 1 */}
+                <div className="bg-slate-950 p-6 rounded-3xl border border-slate-800 space-y-4 relative overflow-hidden group hover:border-emerald-500/50 transition-all">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono font-black flex items-center justify-center text-base">
+                      1
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
+                      Paso Inicial
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                    <Download className="w-4 h-4 text-emerald-400" />
+                    <span>Descargá la Plantilla Modelo</span>
+                  </h3>
+                  <p className="text-xs text-slate-300 font-medium leading-relaxed">
+                    Hacé clic en <strong className="text-white">Descargar Plantilla (.XLSX)</strong> arriba. El archivo viene listo con los encabezados exactos que requiere el sistema.
+                  </p>
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={() => handleDescargarPlantilla('xlsx')}
+                      className="px-3.5 py-2 bg-emerald-600/20 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-600 hover:text-white rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Bajar Excel Modelo (.xlsx)</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* PASO 2 */}
+                <div className="bg-slate-950 p-6 rounded-3xl border border-slate-800 space-y-4 relative overflow-hidden group hover:border-sky-500/50 transition-all">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 font-mono font-black flex items-center justify-center text-base">
+                      2
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2.5 py-1 rounded-full">
+                      Carga de Repuestos
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-sky-400" />
+                    <span>Llená tus Repuestos en Excel</span>
+                  </h3>
+                  <p className="text-xs text-slate-300 font-medium leading-relaxed">
+                    Completá los datos de tus repuestos. El único campo obligatorio es <strong className="text-amber-300 font-mono">codigo_filtrar</strong> (ej: <code className="text-white bg-slate-900 px-1 rounded">AF-205</code>).
+                  </p>
+                  <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-[11px] text-slate-400 font-mono">
+                    <span className="text-sky-300 font-bold">Opcionales:</span> titulo, categoria, marca, precio, equivalencias, vehiculo.
+                  </div>
+                </div>
+
+                {/* PASO 3 */}
+                <div className="bg-slate-950 p-6 rounded-3xl border border-slate-800 space-y-4 relative overflow-hidden group hover:border-purple-500/50 transition-all">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 font-mono font-black flex items-center justify-center text-base">
+                      3
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2.5 py-1 rounded-full">
+                      Publicar en la Web
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                    <Upload className="w-4 h-4 text-purple-400" />
+                    <span>Arrastrá y Confirmá</span>
+                  </h3>
+                  <p className="text-xs text-slate-300 font-medium leading-relaxed">
+                    Soltá el archivo en el recuadro de abajo. Verás una tabla de previsualización para revisar los datos antes de guardarlos. Si un código ya existe, <strong className="text-emerald-400">se actualizará automáticamente</strong>.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: COLUMNAS ACEPTADAS */}
+            {activeTutorialTab === 'columnas' && (
+              <div className="space-y-4 animate-fade-in">
+                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex items-center gap-3 text-xs text-slate-300">
+                  <Info className="w-5 h-5 text-sky-400 shrink-0" />
+                  <span>
+                    El sistema es inteligente y reconoce variaciones en los nombres de las cabeceras (mayúsculas, minúsculas o inglés). A continuación se detallan las columnas compatibles:
+                  </span>
+                </div>
+
+                <div className="border border-slate-800 rounded-2xl overflow-hidden bg-slate-950">
+                  <div className="max-h-72 overflow-y-auto custom-scrollbar">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-900 text-slate-400 uppercase text-[10px] font-black tracking-wider sticky top-0 border-b border-slate-800">
+                        <tr>
+                          <th className="p-3">Nombre Recomendado</th>
+                          <th className="p-3">Nombres Alternativos Aceptados</th>
+                          <th className="p-3">Requerido</th>
+                          <th className="p-3">Tipo de Dato & Ejemplo</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60 font-medium text-slate-300">
+                        <tr className="hover:bg-slate-900/50">
+                          <td className="p-3 font-mono font-black text-amber-400">codigo_filtrar</td>
+                          <td className="p-3 font-mono text-[11px] text-slate-400">codigo, code, sku, id_producto</td>
+                          <td className="p-3">
+                            <span className="px-2 py-0.5 bg-red-500/20 text-red-400 border border-red-500/30 rounded text-[10px] font-black">
+                              SI (OBLIGATORIO)
+                            </span>
+                          </td>
+                          <td className="p-3">Texto (ej: <code className="text-white bg-slate-900 px-1 rounded">AF-205</code>, <code className="text-white bg-slate-900 px-1 rounded">KIT-01</code>)</td>
+                        </tr>
+
+                        <tr className="hover:bg-slate-900/50">
+                          <td className="p-3 font-mono font-black text-emerald-400">titulo_producto</td>
+                          <td className="p-3 font-mono text-[11px] text-slate-400">titulo, title, nombre, producto</td>
+                          <td className="p-3 text-slate-500 font-semibold">Opcional</td>
+                          <td className="p-3">Texto (ej: <code className="text-white bg-slate-900 px-1 rounded">Filtro de Aire Toyota Hilux 2.8</code>)</td>
+                        </tr>
+
+                        <tr className="hover:bg-slate-900/50">
+                          <td className="p-3 font-mono font-black text-emerald-400">categoria</td>
+                          <td className="p-3 font-mono text-[11px] text-slate-400">category, tipo, rubro</td>
+                          <td className="p-3 text-slate-500 font-semibold">Opcional</td>
+                          <td className="p-3">Texto (Filtros de Aire, Aceite, Combustible, Habitáculo, Kits)</td>
+                        </tr>
+
+                        <tr className="hover:bg-slate-900/50">
+                          <td className="p-3 font-mono font-black text-emerald-400">marca_filtro</td>
+                          <td className="p-3 font-mono text-[11px] text-slate-400">marca, brand, fabricante</td>
+                          <td className="p-3 text-slate-500 font-semibold">Opcional</td>
+                          <td className="p-3">Texto (ej: <code className="text-white bg-slate-900 px-1 rounded">Pro Filter</code>, <code className="text-white bg-slate-900 px-1 rounded">Maxfil</code>, <code className="text-white bg-slate-900 px-1 rounded">MDH</code>, <code className="text-white bg-slate-900 px-1 rounded">Picborg</code>, <code className="text-white bg-slate-900 px-1 rounded">Wega</code>)</td>
+                        </tr>
+
+                        <tr className="hover:bg-slate-900/50">
+                          <td className="p-3 font-mono font-black text-emerald-400">precio</td>
+                          <td className="p-3 font-mono text-[11px] text-slate-400">precio_ars, price, importe, valor</td>
+                          <td className="p-3 text-slate-500 font-semibold">Opcional</td>
+                          <td className="p-3">Número (ej: <code className="text-white bg-slate-900 px-1 rounded">14500</code> - Sin signos $ ni puntos)</td>
+                        </tr>
+
+                        <tr className="hover:bg-slate-900/50">
+                          <td className="p-3 font-mono font-black text-emerald-400">dimensiones</td>
+                          <td className="p-3 font-mono text-[11px] text-slate-400">medidas, dimensions, tamano</td>
+                          <td className="p-3 text-slate-500 font-semibold">Opcional</td>
+                          <td className="p-3">Texto (ej: <code className="text-white bg-slate-900 px-1 rounded">DE: 76mm | DI: 71mm | Alt: 123mm</code>)</td>
+                        </tr>
+
+                        <tr className="hover:bg-slate-900/50">
+                          <td className="p-3 font-mono font-black text-emerald-400">descripcion_aplicacion</td>
+                          <td className="p-3 font-mono text-[11px] text-slate-400">descripcion, aplicacion, detalle</td>
+                          <td className="p-3 text-slate-500 font-semibold">Opcional</td>
+                          <td className="p-3">Texto largo (ej: <code className="text-white bg-slate-900 px-1 rounded">Compatible con Toyota Hilux 2.8 2016+</code>)</td>
+                        </tr>
+
+                        <tr className="hover:bg-slate-900/50">
+                          <td className="p-3 font-mono font-black text-sky-400">equivalencias</td>
+                          <td className="p-3 font-mono text-[11px] text-slate-400">cruces, equivalencias_texto, cruza</td>
+                          <td className="p-3 text-slate-500 font-semibold">Opcional</td>
+                          <td className="p-3">Texto estructurado (ej: <code className="text-white bg-slate-900 px-1 rounded">WEGA: JFA-0205 | MANN: C24005</code>)</td>
+                        </tr>
+
+                        <tr className="hover:bg-slate-900/50">
+                          <td className="p-3 font-mono font-black text-sky-400">vehiculo_marca / modelo</td>
+                          <td className="p-3 font-mono text-[11px] text-slate-400">auto_marca, auto_modelo, marca_vehiculo</td>
+                          <td className="p-3 text-slate-500 font-semibold">Opcional</td>
+                          <td className="p-3">Texto (ej: <code className="text-white bg-slate-900 px-1 rounded">TOYOTA</code> / <code className="text-white bg-slate-900 px-1 rounded">HILUX</code>)</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: FORMATO DE EQUIVALENCIAS Y VEHÍCULOS */}
+            {activeTutorialTab === 'equivalencias' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
+                {/* EQUIVALENCIAS CARD */}
+                <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-4">
+                  <div className="flex items-center gap-2 text-sky-400 text-xs font-black uppercase tracking-wider">
+                    <RefreshCw className="w-4 h-4" />
+                    <span>Carga de Equivalencias Cruzadas</span>
+                  </div>
+
+                  <p className="text-xs text-slate-300 leading-relaxed font-semibold">
+                    Podés cargar los cruces con marcas competidoras de dos maneras en la planilla:
+                  </p>
+
+                  <div className="space-y-3">
+                    <div className="bg-slate-900 p-3 rounded-xl border border-slate-800">
+                      <span className="text-[11px] font-black text-emerald-400 block mb-1">Opción A: Columna Combinada ("equivalencias")</span>
+                      <p className="text-[11px] text-slate-400 font-mono bg-slate-950 p-2 rounded border border-slate-800 text-amber-300">
+                        WEGA: WO-180, MANN: W712/95, FRAM: PH5803  ó  WO-180 / W712/95
+                      </p>
+                      <span className="text-[10px] text-slate-500 block mt-1">Usá comas (,), punto y coma (;), o la barra / para separar. ¡No se necesita la barrita vertical (|)!</span>
+                    </div>
+
+                    <div className="bg-slate-900 p-3 rounded-xl border border-slate-800">
+                      <span className="text-[11px] font-black text-sky-400 block mb-1">Opción B: Columnas Dedicadas por Marca</span>
+                      <p className="text-[11px] text-slate-400 font-mono bg-slate-950 p-2 rounded border border-slate-800 text-slate-300">
+                        wega_codigo, mann_codigo, fram_codigo, oem_codigo
+                      </p>
+                      <span className="text-[10px] text-slate-500 block mt-1">Podés agregar columnas específicas con el código directo de cada marca competidora.</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-[11px] text-emerald-300 font-semibold flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-400" />
+                    <span>Motor Anti-Errores de Tipeo: Corregirá erratas automáticamente (ej: <code className="text-white">mann-filter</code> ➔ <code className="text-white">Mann</code>, <code className="text-white">W 610/3</code> ➔ <code className="text-white">w6103</code>).</span>
+                  </div>
+                </div>
+
+                {/* VEHÍCULOS CARD */}
+                <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-4">
+                  <div className="flex items-center gap-2 text-purple-400 text-xs font-black uppercase tracking-wider">
+                    <Car className="w-4 h-4" />
+                    <span>Asociación a Vehículos y Aplicaciones</span>
+                  </div>
+
+                  <p className="text-xs text-slate-300 leading-relaxed font-semibold">
+                    Si deseás que el producto aparezca en el buscador inteligente por vehículo, completá las columnas correspondientes:
+                  </p>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center bg-slate-900 p-2.5 rounded-xl text-xs">
+                      <span className="font-bold text-slate-400">vehiculo_marca:</span>
+                      <span className="font-mono text-amber-300 font-bold">TOYOTA, VOLKSWAGEN, FORD...</span>
+                    </div>
+
+                    <div className="flex justify-between items-center bg-slate-900 p-2.5 rounded-xl text-xs">
+                      <span className="font-bold text-slate-400">vehiculo_modelo:</span>
+                      <span className="font-mono text-amber-300 font-bold">HILUX, AMAROK, RANGER...</span>
+                    </div>
+
+                    <div className="flex justify-between items-center bg-slate-900 p-2.5 rounded-xl text-xs">
+                      <span className="font-bold text-slate-400">vehiculo_version:</span>
+                      <span className="font-mono text-slate-300">2.8 TDi, 2.0 BiTurbo...</span>
+                    </div>
+
+                    <div className="flex justify-between items-center bg-slate-900 p-2.5 rounded-xl text-xs">
+                      <span className="font-bold text-slate-400">vehiculo_año:</span>
+                      <span className="font-mono text-slate-300">2016-2023, 2010+</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl text-[11px] text-purple-300 font-semibold flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 shrink-0 text-purple-400" />
+                    <span>Consolidador Inteligente: Elimina nombres repetidos en el modelo (ej: <code className="text-white">VOLKSWAGEN Gol IV</code> ➔ Modelo: <code className="text-white">Gol</code>, Versión: <code className="text-white">Gen IV</code>).</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 4: PREGUNTAS FRECUENTES (FAQ) */}
+            {activeTutorialTab === 'faq' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
+                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                  <h4 className="text-xs font-black text-white flex items-center gap-2">
+                    <HelpCircle className="w-4 h-4 text-emerald-400" />
+                    <span>¿Qué sucede si un producto de la planilla ya existe en el sistema?</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-400 font-semibold leading-relaxed">
+                    El sistema detectará que ya existe (etiqueta <strong className="text-sky-400">🔵 ACTUALIZA</strong>) y actualizará su precio, categoría, marca y descripción sin borrar las equivalencias o vehículos asociados previamente.
+                  </p>
+                </div>
+
+                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                  <h4 className="text-xs font-black text-white flex items-center gap-2">
+                    <HelpCircle className="w-4 h-4 text-amber-400" />
+                    <span>¿Qué pasa si la celda de precio está vacía?</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-400 font-semibold leading-relaxed">
+                    Si no asignás un número en el precio, el producto quedará etiquetado como <strong className="text-white">"Consultar Precio"</strong> en la web pública, invitando a los clientes a consultar por WhatsApp.
+                  </p>
+                </div>
+
+                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                  <h4 className="text-xs font-black text-white flex items-center gap-2">
+                    <HelpCircle className="w-4 h-4 text-purple-400" />
+                    <span>¿Cómo se importan los Kits de Filtros?</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-400 font-semibold leading-relaxed">
+                    Podés crear el producto asignando la categoría <code className="text-amber-300 font-mono">Kits de Filtros</code> y un código que empiece con KIT (ej: <code className="text-amber-300 font-mono">KIT-01</code>). Luego podés asociar sus componentes individuales desde el panel del producto.
+                  </p>
+                </div>
+
+                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                  <h4 className="text-xs font-black text-white flex items-center gap-2">
+                    <HelpCircle className="w-4 h-4 text-sky-400" />
+                    <span>¿Puedo subir archivos comprimidos o fotos en el Excel?</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-400 font-semibold leading-relaxed">
+                    Las fotos de los productos se suben directamente desde el administrador de cada producto usando el cargador automático que comprime las imágenes a formato WebP (≤100KB).
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
 
       {/* ÁREA DE CARGA Y DROPAZONE */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6">

@@ -123,11 +123,13 @@ function LoginForm() {
         </button>
       </form>
 
-      <div className="text-center pt-2">
-        <span className="text-[11px] font-semibold text-slate-500">
-          Credenciales por defecto en <code className="text-blue-400 font-mono">.env.local</code>
-        </span>
-      </div>
+      {process.env.NODE_ENV === 'development' && (
+        <div className="text-center pt-2">
+          <span className="text-[11px] font-semibold text-slate-500">
+            Credenciales configuradas en <code className="text-blue-400 font-mono">.env.local</code>
+          </span>
+        </div>
+      )}
     </div>
   );
 }

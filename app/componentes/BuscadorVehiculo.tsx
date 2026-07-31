@@ -519,7 +519,7 @@ export default function BuscadorVehiculo() {
                 {marcaSeleccionada} {modeloSeleccionado}
               </h3>
               <p className="text-xs text-slate-400 font-semibold mt-1">
-                {versiones.length} versión{versiones.length !== 1 ? 'es' : ''} disponible{versiones.length !== 1 ? 's' : ''} · <strong className="text-emerald-400">{totalFiltros} producto{totalFiltros !== 1 ? 's' : ''} en stock</strong>
+                {versiones.length} versión{versiones.length !== 1 ? 'es' : ''} disponible{versiones.length !== 1 ? 's' : ''} · <strong className="text-emerald-400">{totalFiltros} producto{totalFiltros !== 1 ? 's' : ''} disponible{totalFiltros !== 1 ? 's' : ''}</strong>
               </p>
             </div>
 

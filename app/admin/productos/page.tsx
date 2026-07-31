@@ -22,11 +22,13 @@ import {
   AlertTriangle,
   X,
   Eye,
+  EyeOff,
   FileSpreadsheet,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { Filtro } from '@/lib/types';
 import { formatearPrecio, normalizarImagenes } from '@/lib/utils';
+import { getOcultarPreciosGlobal, setOcultarPreciosGlobal, debeOcultarPrecio } from '@/lib/preciosConfig';
 import ConfirmModal from '../componentes/ConfirmModal';
 import AdminToast, { ToastMessage } from '../componentes/AdminToast';
 
@@ -43,13 +45,21 @@ export default function AdminProductosPage() {
   const [selectedCategoria, setSelectedCategoria] = useState('Todas');
   const [selectedMarca, setSelectedMarca] = useState('Todas');
   const [statusFilter, setStatusFilter] = useState<'todos' | 'activos' | 'inactivos'>('todos');
+  const [sortBy, setSortBy] = useState<'recientes' | 'antiguos' | 'codigo' | 'precio_asc' | 'precio_desc'>('recientes');
   const [currentPage, setCurrentPage] = useState(1);
+
+  const [ocultarGlobal, setOcultarGlobal] = useState(false);
+
+  useEffect(() => {
+    getOcultarPreciosGlobal().then(setOcultarGlobal);
+  }, []);
 
   // Selection & Bulk actions
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkCategory, setBulkCategory] = useState('');
   const [bulkPriceChange, setBulkPriceChange] = useState<number | ''>('');
+  const [bulkPriceVisibility, setBulkPriceVisibility] = useState<'no_change' | 'mostrar' | 'ocultar'>('no_change');
   const [bulkLoading, setBulkLoading] = useState(false);
 
   // Delete modal state
@@ -104,7 +114,7 @@ export default function AdminProductosPage() {
 
   // Filtered products list
   const filteredProductos = useMemo(() => {
-    return productos.filter((p) => {
+    const list = productos.filter((p) => {
       // Search text
       if (searchTerm.trim()) {
         const term = searchTerm.toLowerCase();
@@ -136,13 +146,32 @@ export default function AdminProductosPage() {
 
       return true;
     });
-  }, [productos, searchTerm, selectedCategoria, selectedMarca, statusFilter]);
+
+    return list.sort((a, b) => {
+      if (sortBy === 'recientes') {
+        return (b.id || 0) - (a.id || 0);
+      }
+      if (sortBy === 'antiguos') {
+        return (a.id || 0) - (b.id || 0);
+      }
+      if (sortBy === 'codigo') {
+        return (a.codigo_filtrar || '').localeCompare(b.codigo_filtrar || '');
+      }
+      if (sortBy === 'precio_asc') {
+        return (a.precio || 0) - (b.precio || 0);
+      }
+      if (sortBy === 'precio_desc') {
+        return (b.precio || 0) - (a.precio || 0);
+      }
+      return 0;
+    });
+  }, [productos, searchTerm, selectedCategoria, selectedMarca, statusFilter, sortBy]);
 
   // Reset pagination on filter change
   useEffect(() => {
     setCurrentPage(1);
     setSelectedIds(new Set());
-  }, [searchTerm, selectedCategoria, selectedMarca, statusFilter]);
+  }, [searchTerm, selectedCategoria, selectedMarca, statusFilter, sortBy]);
 
   // Paginated list
   const totalPages = Math.ceil(filteredProductos.length / PAGE_SIZE) || 1;
@@ -177,6 +206,37 @@ export default function AdminProductosPage() {
         id: Date.now().toString(),
         type: 'error',
         title: 'Error al cambiar estado',
+        message: err.message,
+      });
+    }
+  };
+
+  // Toggle ocultar precio individual
+  const handleToggleOcultarPrecio = async (producto: Filtro) => {
+    const nuevoOcultar = !producto.ocultar_precio;
+    try {
+      const { error } = await supabase
+        .from('productos_filtrar')
+        .update({ ocultar_precio: nuevoOcultar })
+        .eq('id', producto.id);
+
+      if (error) throw error;
+
+      setProductos((prev) =>
+        prev.map((p) => (p.id === producto.id ? { ...p, ocultar_precio: nuevoOcultar } : p))
+      );
+
+      setToast({
+        id: Date.now().toString(),
+        type: 'success',
+        title: `Precio ${nuevoOcultar ? 'oculto' : 'visible'}`,
+        message: `El precio de ${producto.codigo_filtrar} ahora está ${nuevoOcultar ? 'oculto' : 'visible'} individualmente.`,
+      });
+    } catch (err: any) {
+      setToast({
+        id: Date.now().toString(),
+        type: 'error',
+        title: 'Error al cambiar visibilidad del precio',
         message: err.message,
       });
     }
@@ -245,6 +305,11 @@ export default function AdminProductosPage() {
       }
       if (bulkPriceChange !== '') {
         updatePayload.precio = Number(bulkPriceChange);
+      }
+      if (bulkPriceVisibility === 'ocultar') {
+        updatePayload.ocultar_precio = true;
+      } else if (bulkPriceVisibility === 'mostrar') {
+        updatePayload.ocultar_precio = false;
       }
 
       if (Object.keys(updatePayload).length === 0) {
@@ -330,9 +395,57 @@ export default function AdminProductosPage() {
         </div>
       </div>
 
+      {/* BANNER CONTROL GLOBAL DE PRECIOS */}
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 md:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-2xl border flex items-center justify-center shrink-0 ${
+            ocultarGlobal
+              ? 'bg-purple-500/10 border-purple-500/20 text-purple-400'
+              : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+          }`}>
+            {ocultarGlobal ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+          </div>
+          <div>
+            <h3 className="text-xs font-black text-white uppercase tracking-wider">
+              Visibilidad de Precios en todo el Catálogo
+            </h3>
+            <p className="text-[11px] font-semibold text-slate-400 mt-0.5">
+              {ocultarGlobal
+                ? 'Precios OCULTOS en la web pública (muestra "Consultar Precio" en todos los productos).'
+                : 'Precios VISIBLES en la web pública (salvo productos configurados individualmente como ocultos).'}
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={async () => {
+            const nuevoEstado = !ocultarGlobal;
+            setOcultarGlobal(nuevoEstado);
+            await setOcultarPreciosGlobal(nuevoEstado);
+            setToast({
+              id: Date.now().toString(),
+              type: 'success',
+              title: nuevoEstado ? 'Precios ocultos globalmente' : 'Precios visibles globalmente',
+              message: nuevoEstado
+                ? 'Todos los productos mostrarán "Consultar Precio" en la web.'
+                : 'Se mostrarán los precios numéricos en la web pública.',
+            });
+          }}
+          className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all shadow-md shrink-0 flex items-center gap-2 ${
+            ocultarGlobal
+              ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/20'
+              : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+          }`}
+        >
+          {ocultarGlobal ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          <span>{ocultarGlobal ? 'Ocultamiento Global Activo' : 'Ocultar Precios de Todo el Catálogo'}</span>
+        </button>
+      </div>
+
       {/* FILTROS Y BÚSQUEDA */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 md:p-6 space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           
           {/* INPUT DE BÚSQUEDA */}
           <div className="relative">
@@ -341,8 +454,8 @@ export default function AdminProductosPage() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar por código o título..."
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-blue-500 transition-all placeholder:text-slate-600"
+              placeholder="Buscar por código, título..."
+              className="w-full pl-9 pr-9 py-2.5 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-blue-500 transition-all placeholder:text-slate-500"
             />
             {searchTerm && (
               <button
@@ -394,6 +507,21 @@ export default function AdminProductosPage() {
               <option value="todos">Estado: Todos</option>
               <option value="activos">Solo Activos</option>
               <option value="inactivos">Solo Inactivos</option>
+            </select>
+          </div>
+
+          {/* ORDENAMIENTO (POR FECHA DE INGRESO / CÓDIGO / PRECIO) */}
+          <div>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-amber-300 outline-none focus:border-amber-500 transition-all cursor-pointer"
+            >
+              <option value="recientes">📅 Ingreso: Más Recientes</option>
+              <option value="antiguos">📅 Ingreso: Más Antiguos</option>
+              <option value="codigo">🔤 Código: A - Z</option>
+              <option value="precio_desc">💰 Precio: Mayor a Menor</option>
+              <option value="precio_asc">💰 Precio: Menor a Mayor</option>
             </select>
           </div>
         </div>
@@ -456,13 +584,16 @@ export default function AdminProductosPage() {
 
                       {/* MINIATURA */}
                       <td className="p-4">
-                        <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center">
+                        <Link
+                          href={`/admin/producto/${encodeURIComponent(p.codigo_filtrar)}`}
+                          className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center hover:border-blue-500 transition-colors block"
+                        >
                           {imgs[0] ? (
                             <img src={imgs[0]} alt={p.codigo_filtrar} className="w-full h-full object-cover" />
                           ) : (
                             <Package className="w-4 h-4 text-slate-600" />
                           )}
-                        </div>
+                        </Link>
                       </td>
 
                       {/* CÓDIGO */}
@@ -477,9 +608,12 @@ export default function AdminProductosPage() {
 
                       {/* TÍTULO / APLICACIÓN */}
                       <td className="p-4 max-w-xs">
-                        <div className="font-bold text-white truncate">
+                        <Link
+                          href={`/admin/producto/${encodeURIComponent(p.codigo_filtrar)}`}
+                          className="font-bold text-white hover:text-blue-400 transition-colors truncate block"
+                        >
                           {p.titulo_producto || 'Sin título'}
-                        </div>
+                        </Link>
                         {p.descripcion_aplicacion && (
                           <div className="text-[10px] text-slate-500 truncate mt-0.5">
                             {p.descripcion_aplicacion}
@@ -499,9 +633,25 @@ export default function AdminProductosPage() {
                         {p.marca_filtro || '-'}
                       </td>
 
-                      {/* PRECIO */}
-                      <td className="p-4 font-black text-white text-xs">
-                        {formatearPrecio(p.precio)}
+                      {/* PRECIO CON CONTROL DE OCULTAMIENTO */}
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          <span className={`font-black text-xs ${p.ocultar_precio ? 'text-purple-400 opacity-90' : 'text-white'}`}>
+                            {formatearPrecio(p.precio, p.ocultar_precio)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleOcultarPrecio(p)}
+                            title={p.ocultar_precio ? 'Precio OCULTO individualmente. Clic para MOSTRAR.' : 'Precio VISIBLE. Clic para OCULTAR en la web.'}
+                            className={`p-1.5 rounded-lg border transition-all ${
+                              p.ocultar_precio
+                                ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 hover:bg-purple-500/30'
+                                : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white hover:bg-slate-700'
+                            }`}
+                          >
+                            {p.ocultar_precio ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
                       </td>
 
                       {/* ESTADO (TOGGLE) */}
@@ -641,6 +791,21 @@ export default function AdminProductosPage() {
                   placeholder="Ej: 15500"
                   className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-purple-500 placeholder:text-slate-600"
                 />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-black uppercase text-slate-400 mb-1.5">
+                  Visibilidad de Precio (opcional)
+                </label>
+                <select
+                  value={bulkPriceVisibility}
+                  onChange={(e) => setBulkPriceVisibility(e.target.value as any)}
+                  className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-purple-500"
+                >
+                  <option value="no_change">No modificar visibilidad de precio</option>
+                  <option value="mostrar">Mostrar precio públicamente</option>
+                  <option value="ocultar">Ocultar precio (Muestra 'Consultar Precio')</option>
+                </select>
               </div>
             </div>
 

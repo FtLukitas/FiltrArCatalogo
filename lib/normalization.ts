@@ -191,7 +191,7 @@ export function sanitizarEquivalenciasTexto(texto: string | null | undefined): E
   if (!texto || !texto.trim()) return [];
 
   const raw = texto.trim();
-  const parts = raw.split(/[,;|\n]/).map((p) => p.trim()).filter(Boolean);
+  const parts = raw.split(/(?:\s+\/\s+|[,;|\n])/).map((p) => p.trim()).filter(Boolean);
   const items: EquivalenciaItem[] = [];
   const seenKeys = new Set<string>();
 
