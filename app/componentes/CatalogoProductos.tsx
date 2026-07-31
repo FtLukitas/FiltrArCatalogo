@@ -12,6 +12,7 @@ const CATEGORIAS = [
   'Filtros de Aire',
   'Filtros de Combustible',
   'Filtros de Habitáculo',
+  'Filtros de Inyección',
   'Kits de Filtros',
   'Filtros Varios',
 ];
@@ -87,14 +88,25 @@ export default function CatalogoProductos({ initialSearch = '', initialCategoria
       try {
         const construirQuery = (tableName: string) => {
           let q = supabase.from(tableName).select('*', { count: 'exact' }).neq('activo', false);
+          
           if (categoriaSeleccionada !== 'TODOS') {
-            q = q.eq('categoria', categoriaSeleccionada);
+            if (categoriaSeleccionada === 'Inyección Common Rail' || categoriaSeleccionada === 'Filtros de Inyección') {
+              q = q.or('categoria.ilike.%inyección%,categoria.ilike.%common rail%,marca_filtro.ilike.%common rail%,titulo_producto.ilike.%common rail%');
+            } else {
+              q = q.eq('categoria', categoriaSeleccionada);
+            }
           }
+          
           if (marcaSeleccionada !== 'TODAS') {
             q = q.ilike('marca_filtro', `%${marcaSeleccionada}%`);
           }
+          
           if (busquedaTexto.trim().length >= 2) {
-            q = q.ilike('buscador_unificado', `%${busquedaTexto.trim().toLowerCase()}%`);
+            const terms = busquedaTexto.trim().toLowerCase().split(/\s+/).filter(Boolean);
+            terms.forEach((term) => {
+              const cleanTerm = term.replace(/[-_]/g, '');
+              q = q.or(`buscador_unificado.ilike.%${term}%,buscador_unificado.ilike.%${cleanTerm}%`);
+            });
           }
           if (orden === 'codigo-asc') {
             q = q.order('codigo_filtrar', { ascending: true });

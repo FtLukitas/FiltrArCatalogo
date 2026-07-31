@@ -16,7 +16,7 @@ function BuscarContenido() {
     <main className="min-h-screen bg-slate-50">
       
       {/* CABECERA DE BÚSQUEDA */}
-      <section className="bg-slate-900 text-white pt-10 pb-16 px-4 sm:px-6 lg:px-8 border-b border-slate-800 relative z-20">
+      <section className="bg-slate-900 text-white pt-10 pb-16 px-4 sm:px-6 lg:px-8 border-b border-slate-800 relative z-30">
         <div className="max-w-7xl mx-auto">
           
           {/* BREADCRUMB */}

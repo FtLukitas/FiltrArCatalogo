@@ -26,10 +26,126 @@ import {
 import { supabase } from '@/lib/supabase';
 import type { Filtro, ResultadoVehiculo } from '@/lib/types';
 import { formatearPrecio, generarUrlWhatsapp, normalizarImagenes } from '@/lib/utils';
+import { normalizarMarcaVehiculo } from '@/lib/normalization';
 import TarjetaProducto from './TarjetaProducto';
 
-/* ───────────────── CONSTANTES ───────────────── */
+/* ───────────────── CONSTANTES Y HELPERS ───────────────── */
 
+export function normalizarModeloBase(modeloRaw: string): { baseModel: string; subVersion: string } {
+  if (!modeloRaw || !modeloRaw.trim()) return { baseModel: 'GENERAL', subVersion: '' };
+
+  let clean = modeloRaw.trim().replace(/\s+/g, ' ');
+
+  // 1. Quitar marca del inicio si está repetida en el modelo
+  const MARCAS_PREFIX = [
+    'VOLKSWAGEN', 'VW', 'CHEVROLET', 'CHEVY', 'FORD', 'FIAT', 'PEUGEOT', 'RENAULT',
+    'CITROEN', 'CITROËN', 'TOYOTA', 'NISSAN', 'HONDA', 'HYUNDAI', 'KIA', 'MERCEDES BENZ',
+    'MERCEDES-BENZ', 'MERCEDES', 'MB', 'BMW', 'AUDI', 'JEEP', 'RAM', 'DODGE', 'MITSUBISHI'
+  ];
+
+  const upperStr = clean.toUpperCase();
+  for (const m of MARCAS_PREFIX) {
+    if (upperStr.startsWith(m + ' ')) {
+      clean = clean.slice(m.length + 1).trim();
+      break;
+    }
+  }
+
+  // Quitar palabras preliminares
+  clean = clean.replace(/^(NUEVO|NUEVA)\s+/i, '');
+  const cleanUpper = clean.toUpperCase();
+
+  // 2. Familias canónicas de modelos raíz
+  const FAMILIAS: [RegExp, string][] = [
+    [/^GOL\b/i, 'GOL'],
+    [/^CORSA\b|^CLASSIC\b/i, 'CORSA'],
+    [/^PALIO\b/i, 'PALIO'],
+    [/^SIENA\b/i, 'SIENA'],
+    [/^UNO\b/i, 'UNO'],
+    [/^C3\b/i, 'C3'],
+    [/^C4\b/i, 'C4'],
+    [/^206\b/i, '206'],
+    [/^207\b/i, '207'],
+    [/^208\b/i, '208'],
+    [/^307\b/i, '307'],
+    [/^308\b/i, '308'],
+    [/^408\b/i, '408'],
+    [/^HILUX\b|^SW4\b/i, 'HILUX'],
+    [/^AMAROK\b/i, 'AMAROK'],
+    [/^RANGER\b/i, 'RANGER'],
+    [/^FIESTA\b/i, 'FIESTA'],
+    [/^FOCUS\b/i, 'FOCUS'],
+    [/^KA\+?\b/i, 'KA'],
+    [/^ECOSPORT\b/i, 'ECOSPORT'],
+    [/^CLIO\b/i, 'CLIO'],
+    [/^KANGOO\b/i, 'KANGOO'],
+    [/^SANDERO\b|^STEPWAY\b/i, 'SANDERO'],
+    [/^MEGANE\b|^MÉGANE\b/i, 'MEGANE'],
+    [/^DUSTER\b/i, 'DUSTER'],
+    [/^S10\b/i, 'S10'],
+    [/^TRACKER\b/i, 'TRACKER'],
+    [/^ONIX\b/i, 'ONIX'],
+    [/^PRISMA\b/i, 'PRISMA'],
+    [/^CRUZE\b/i, 'CRUZE'],
+    [/^PARTNER\b/i, 'PARTNER'],
+    [/^BERLINGO\b/i, 'BERLINGO'],
+    [/^STRADA\b/i, 'STRADA'],
+    [/^TORO\b/i, 'TORO'],
+    [/^SAVEIRO\b/i, 'SAVEIRO'],
+    [/^SURAN\b/i, 'SURAN'],
+    [/^FOX\b|^CROSSFOX\b/i, 'FOX'],
+    [/^VENTO\b/i, 'VENTO'],
+    [/^BORA\b/i, 'BORA'],
+    [/^COROLLA\b/i, 'COROLLA'],
+    [/^ETIOS\b/i, 'ETIOS'],
+    [/^YARIS\b/i, 'YARIS'],
+    [/^FRONTIER\b/i, 'FRONTIER'],
+    [/^ALASKAN\b/i, 'ALASKAN'],
+    [/^FLUENCE\b/i, 'FLUENCE'],
+    [/^LOGAN\b/i, 'LOGAN'],
+    [/^KWID\b/i, 'KWID'],
+    [/^SPIN\b/i, 'SPIN'],
+    [/^AGILE\b/i, 'AGILE'],
+    [/^CELTA\b/i, 'CELTA'],
+    [/^MERIVA\b/i, 'MERIVA'],
+    [/^ZAFIRA\b/i, 'ZAFIRA'],
+    [/^ASTRA\b/i, 'ASTRA'],
+    [/^VECTRA\b/i, 'VECTRA'],
+    [/^FIORINO\b/i, 'FIORINO'],
+    [/^CRONOS\b/i, 'CRONOS'],
+    [/^MOBI\b/i, 'MOBI'],
+    [/^ARGO\b/i, 'ARGO'],
+    [/^PUNTO\b/i, 'PUNTO'],
+    [/^STILO\b/i, 'STILO'],
+    [/^IDEA\b/i, 'IDEA'],
+    [/^DOBLO\b|^DOBLÒ\b/i, 'DOBLO'],
+    [/^DUCATO\b/i, 'DUCATO'],
+    [/^MASTER\b/i, 'MASTER'],
+    [/^BOXER\b/i, 'BOXER'],
+    [/^JUMPER\b/i, 'JUMPER'],
+    [/^HR\b/i, 'HR'],
+    [/^SPRINTER\b/i, 'SPRINTER'],
+  ];
+
+  for (const [regex, canonicalName] of FAMILIAS) {
+    if (regex.test(cleanUpper)) {
+      const rest = clean.replace(regex, '').trim();
+      return {
+        baseModel: canonicalName,
+        subVersion: rest || clean,
+      };
+    }
+  }
+
+  const tokens = clean.split(' ');
+  const baseToken = tokens[0].toUpperCase();
+  const restTokens = tokens.slice(1).join(' ');
+
+  return {
+    baseModel: baseToken,
+    subVersion: restTokens || clean,
+  };
+}
 
 interface FiltroConProducto {
   codigoProduct: string;
@@ -88,11 +204,14 @@ export default function BuscadorVehiculo() {
           if (error || !data) break;
 
           data.forEach((row: any) => {
-            const m = (row.marca || '').trim().replace(/\s+/g, ' ');
-            if (m) {
-              const lower = m.toLowerCase();
-              if (!marcaMap.has(lower)) {
-                marcaMap.set(lower, m);
+            const rawM = (row.marca || '').trim();
+            if (rawM) {
+              const normM = normalizarMarcaVehiculo(rawM);
+              if (normM) {
+                const lower = normM.toLowerCase();
+                if (!marcaMap.has(lower)) {
+                  marcaMap.set(lower, normM);
+                }
               }
             }
           });
@@ -114,7 +233,7 @@ export default function BuscadorVehiculo() {
     fetchMarcas();
   }, []);
 
-  // ── 2. Cargar modelos cuando se selecciona marca ────────
+  // ── 2. Cargar modelos base cuando se selecciona marca ───
   useEffect(() => {
     if (!marcaSeleccionada) {
       setModelos([]);
@@ -126,7 +245,7 @@ export default function BuscadorVehiculo() {
       setModeloSeleccionado('');
       setVersiones([]);
       try {
-        const modeloMap = new Map<string, string>();
+        const modeloSet = new Set<string>();
         let offset = 0;
         const pageSize = 1000;
         let hasMore = true;
@@ -134,18 +253,20 @@ export default function BuscadorVehiculo() {
         while (hasMore) {
           const { data, error } = await supabase
             .from('vehiculos_filtrar')
-            .select('modelo')
-            .eq('marca', marcaSeleccionada)
+            .select('marca, modelo')
             .range(offset, offset + pageSize - 1);
 
           if (error || !data) break;
 
           data.forEach((row: any) => {
-            const m = (row.modelo || '').trim().replace(/\s+/g, ' ');
-            if (m) {
-              const lower = m.toLowerCase();
-              if (!modeloMap.has(lower)) {
-                modeloMap.set(lower, m);
+            const normM = normalizarMarcaVehiculo(row.marca);
+            if (normM === marcaSeleccionada) {
+              const raw = (row.modelo || '').trim();
+              if (raw) {
+                const { baseModel } = normalizarModeloBase(raw);
+                if (baseModel) {
+                  modeloSet.add(baseModel);
+                }
               }
             }
           });
@@ -154,7 +275,7 @@ export default function BuscadorVehiculo() {
           offset += pageSize;
         }
 
-        const sortedModelos = Array.from(modeloMap.values()).sort((a, b) =>
+        const sortedModelos = Array.from(modeloSet).sort((a, b) =>
           a.localeCompare(b, 'es', { numeric: true, sensitivity: 'base' })
         );
         setModelos(sortedModelos);
@@ -167,7 +288,7 @@ export default function BuscadorVehiculo() {
     fetchModelos();
   }, [marcaSeleccionada]);
 
-  // ── 3. Cargar versiones + productos de nuestro catálogo ─
+  // ── 3. Cargar versiones del modelo base + productos ──────
   useEffect(() => {
     if (!marcaSeleccionada || !modeloSeleccionado) {
       setVersiones([]);
@@ -177,7 +298,7 @@ export default function BuscadorVehiculo() {
     const fetchVersiones = async () => {
       setLoadingResultados(true);
       try {
-        const allRows: ResultadoVehiculo[] = [];
+        const allRows: any[] = [];
         let offset = 0;
         const pageSize = 1000;
         let hasMore = true;
@@ -186,12 +307,27 @@ export default function BuscadorVehiculo() {
           const { data, error } = await supabase
             .from('vehiculos_filtrar')
             .select('*')
-            .eq('marca', marcaSeleccionada)
-            .eq('modelo', modeloSeleccionado)
             .range(offset, offset + pageSize - 1);
 
           if (error || !data) break;
-          allRows.push(...(data as ResultadoVehiculo[]));
+
+          data.forEach((row: any) => {
+            const normM = normalizarMarcaVehiculo(row.marca);
+            if (normM === marcaSeleccionada) {
+              const { baseModel, subVersion } = normalizarModeloBase(row.modelo || '');
+              if (
+                baseModel === modeloSeleccionado ||
+                (row.modelo && normalizarModeloBase(row.modelo).baseModel === modeloSeleccionado)
+              ) {
+                let vText = row.version || subVersion;
+                if (!vText || vText === modeloSeleccionado) {
+                  vText = row.modelo || 'Estándar';
+                }
+                allRows.push({ ...row, versionCalculada: vText });
+              }
+            }
+          });
+
           hasMore = data.length === pageSize;
           offset += pageSize;
         }
@@ -201,12 +337,13 @@ export default function BuscadorVehiculo() {
           return;
         }
 
-        // Group by (version, año)
+        // Group by (versionCalculada, año)
         const versionMap = new Map<string, { version: string | null; año: string | null; codigos: Set<string> }>();
-        allRows.forEach(row => {
-          const key = `${row.version || 'Estándar'}|||${row.año || ''}`;
+        allRows.forEach((row: any) => {
+          const vText = row.versionCalculada || 'Estándar';
+          const key = `${vText}|||${row.año || ''}`;
           if (!versionMap.has(key)) {
-            versionMap.set(key, { version: row.version, año: row.año, codigos: new Set() });
+            versionMap.set(key, { version: vText, año: row.año, codigos: new Set() });
           }
           if (row.filtro_asociado) {
             versionMap.get(key)!.codigos.add(row.filtro_asociado);

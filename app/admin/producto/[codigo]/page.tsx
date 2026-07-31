@@ -280,11 +280,26 @@ export default function AdminEditarProductoPage() {
         .order('marca_competidor');
       if (equivs) setEquivalencias(equivs as Equivalencia[]);
 
+      // Collect target codes for smart vehicle resolution
+      const targetCodes = new Set<string>();
+      targetCodes.add(codigo);
+      targetCodes.add(codigo.replace(/[-_ ]/g, ''));
+      if (equivs) {
+        equivs.forEach((e: any) => {
+          if (e.codigo_competidor) {
+            const c = e.codigo_competidor.trim();
+            targetCodes.add(c);
+            targetCodes.add(c.replace(/[-_ ]/g, ''));
+          }
+        });
+      }
+      const targetCodesArr = Array.from(targetCodes).filter(c => c.length >= 2);
+
       // Fetch Vehicles
       const { data: vehs } = await supabase
         .from('vehiculos_filtrar')
         .select('*')
-        .eq('filtro_asociado', codigo)
+        .in('filtro_asociado', targetCodesArr)
         .order('marca');
       if (vehs) setVehiculos(vehs as VehiculoAsociado[]);
 

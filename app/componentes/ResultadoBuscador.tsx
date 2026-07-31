@@ -15,6 +15,7 @@ const CATEGORIAS_LISTA = [
   'Filtros de Aire',
   'Filtros de Combustible',
   'Filtros de Habitáculo',
+  'Filtros de Inyección',
   'Kits de Filtros',
   'Filtros Varios',
 ];
@@ -58,7 +59,7 @@ export default function ResultadoBuscador({ initialSearch = '' }: ResultadoBusca
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Cargar catálogo completo desde Supabase EN BLOQUES (superando el límite de 1000 de Supabase)
+  // Fetch inicial de catálogo completo
   useEffect(() => {
     const fetchCatalog = async () => {
       setLoading(true);
@@ -69,27 +70,23 @@ export default function ResultadoBuscador({ initialSearch = '' }: ResultadoBusca
         let hayMas = true;
 
         while (hayMas) {
-          let { data, error } = await supabase
+          const { data, error } = await supabase
             .from('productos_filtrar')
             .select('*')
             .neq('activo', false)
-            .range(desde, desde + paso - 1)
-            .order('codigo_filtrar');
+            .order('codigo_filtrar', { ascending: true })
+            .range(desde, desde + paso - 1);
 
           if (error || !data || data.length === 0) {
             hayMas = false;
             break;
           }
 
-          if (data && data.length > 0) {
-            todosLosProductos = [...todosLosProductos, ...data];
-            if (data.length < paso) {
-              hayMas = false;
-            } else {
-              desde += paso;
-            }
-          } else {
+          todosLosProductos = [...todosLosProductos, ...data];
+          if (data.length < paso) {
             hayMas = false;
+          } else {
+            desde += paso;
           }
         }
 
@@ -117,30 +114,46 @@ export default function ResultadoBuscador({ initialSearch = '' }: ResultadoBusca
     fetchCatalog();
   }, []);
 
-  // Filtrado reactivo multivariable UNIFICADO
+  // Filtrado reactivo multivariable UNIFICADO inteligente por palabras clave (tokens)
   const productosFiltrados = useMemo(() => {
+    const rawQuery = filtroProducto.trim().toLowerCase();
+    const tokens = rawQuery.split(/\s+/).filter(Boolean);
+
     return productos.filter(p => {
       const code = (p.codigo_filtrar || '').toLowerCase();
+      const codeClean = code.replace(/[-_ ]/g, '');
       const title = (p.titulo_producto || '').toLowerCase();
       const app = (p.descripcion_aplicacion || '').toLowerCase();
       const equiv = (p.equivalencias || '').toLowerCase();
-      const cat = p.categoria || '';
-      const brand = p.marca_filtro || '';
+      const cat = (p.categoria || '').toLowerCase();
+      const brand = (p.marca_filtro || '').toLowerCase();
 
-      // 1. Un solo buscador que analiza Código, Título, Vehículo y Competencia
-      if (filtroProducto.trim()) {
-        const queryTerm = filtroProducto.trim().toLowerCase().replace(/[-_ ]/g, '');
-        const matchCode = code.replace(/[-_ ]/g, '').includes(queryTerm);
-        const matchTitle = title.includes(filtroProducto.trim().toLowerCase());
-        const matchApp = app.includes(filtroProducto.trim().toLowerCase());
-        const matchEquiv = equiv.includes(filtroProducto.trim().toLowerCase());
+      // 1. Todos los términos/palabras de la búsqueda deben coincidir con algún campo del producto
+      if (tokens.length > 0) {
+        const allTokensMatch = tokens.every(token => {
+          const tokenClean = token.replace(/[-_ ]/g, '');
+          return (
+            code.includes(token) ||
+            codeClean.includes(tokenClean) ||
+            title.includes(token) ||
+            app.includes(token) ||
+            equiv.includes(token) ||
+            cat.includes(token) ||
+            brand.includes(token)
+          );
+        });
 
-        if (!matchCode && !matchTitle && !matchApp && !matchEquiv) return false;
+        if (!allTokensMatch) return false;
       }
 
       // 2. Filtro Categorías
       if (categoriasSeleccionadas.length > 0) {
-        const matchesCat = categoriasSeleccionadas.some(c => cat.toLowerCase().includes(c.toLowerCase()));
+        const matchesCat = categoriasSeleccionadas.some(c => {
+          if (c === 'Inyección Common Rail' || c === 'Filtros de Inyección') {
+            return cat.includes('inyección') || cat.includes('common rail') || brand.includes('common rail') || title.includes('common rail');
+          }
+          return cat.includes(c.toLowerCase());
+        });
         if (!matchesCat) return false;
       }
 

@@ -8,7 +8,7 @@ export default function HomePage() {
     <main className="min-h-screen bg-slate-50 overflow-x-hidden max-w-full">
 
       {/* HERO SECTION DISTRIBUIDORA */}
-      <section className="relative z-20 bg-slate-950 text-white pt-12 sm:pt-16 pb-20 sm:pb-24 px-4 sm:px-6 lg:px-8 border-b border-slate-800/80 overflow-hidden">
+      <section className="relative z-30 bg-slate-950 text-white pt-12 sm:pt-16 pb-20 sm:pb-24 px-4 sm:px-6 lg:px-8 border-b border-slate-800/80">
 
         {/* MESH RETÍCULA DE FONDO TÉCNICA */}
         <div className="absolute inset-0 opacity-[0.04] bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />

@@ -75,28 +75,57 @@ export default async function ProductoPage({ params }: PageProps) {
   const ocultarGlobal = configPrecios?.valor === 'true';
   const ocultarPrecioFinal = Boolean(ocultarGlobal || filtro.ocultar_precio === true || filtro.precio === null || filtro.precio === undefined || filtro.precio <= 0);
 
-  // 2. Obtener vehículos compatibles desde vehiculos_filtrar
-  let resVeh = await supabase
-    .from('vehiculos_filtrar')
-    .select('*')
-    .eq('filtro_asociado', codigoActual)
-    .order('marca', { ascending: true });
+  // 2. Obtener equivalencias cruzadas desde equivalencias_cruza
+  const codigosBusquedaSet = new Set<string>();
+  codigosBusquedaSet.add(codigoActual);
+  codigosBusquedaSet.add(codigoActual.replace(/[-_ ]/g, ''));
+  if (decodedCodigo) {
+    codigosBusquedaSet.add(decodedCodigo);
+    codigosBusquedaSet.add(decodedCodigo.replace(/[-_ ]/g, ''));
+  }
 
-  const listaVehiculos = (resVeh.data as ResultadoVehiculo[]) || [];
-  const whatsappUrl = generarUrlWhatsapp(codigoActual, filtro.titulo_producto);
+  const resEquiv = await supabase
+    .from('equivalencias_cruza')
+    .select('marca_competidor, codigo_competidor')
+    .eq('producto_codigo', codigoActual);
 
-  // 2b. Obtener equivalencias cruzadas desde equivalencias_cruza (si filtro.equivalencias esta vacio)
-  if (!filtro.equivalencias) {
-    const resEquiv = await supabase
-      .from('equivalencias_cruza')
-      .select('marca_competidor, codigo_competidor')
-      .eq('producto_codigo', codigoActual);
+  if (!resEquiv.error && resEquiv.data && resEquiv.data.length > 0) {
+    resEquiv.data.forEach((e) => {
+      if (e.codigo_competidor) {
+        const c = e.codigo_competidor.trim();
+        codigosBusquedaSet.add(c);
+        codigosBusquedaSet.add(c.replace(/[-_ ]/g, ''));
+      }
+    });
 
-    if (!resEquiv.error && resEquiv.data && resEquiv.data.length > 0) {
+    if (!filtro.equivalencias) {
       const eqMap = resEquiv.data.map(e => `${e.marca_competidor}: ${e.codigo_competidor}`);
       filtro.equivalencias = eqMap.join(' | ');
     }
   }
+
+  if (filtro.equivalencias) {
+    const parts = filtro.equivalencias.replace(/\|/g, ',').replace(/;/g, ',').split(',');
+    parts.forEach((pt) => {
+      const codePart = pt.split(':').pop()?.trim();
+      if (codePart && codePart.length >= 3) {
+        codigosBusquedaSet.add(codePart);
+        codigosBusquedaSet.add(codePart.replace(/[-_ ]/g, ''));
+      }
+    });
+  }
+
+  const codigosBusquedaArray = Array.from(codigosBusquedaSet).filter((c) => c.length >= 2);
+
+  // Obtener vehículos compatibles desde vehiculos_filtrar
+  let resVeh = await supabase
+    .from('vehiculos_filtrar')
+    .select('*')
+    .in('filtro_asociado', codigosBusquedaArray)
+    .order('marca', { ascending: true });
+
+  const listaVehiculos = (resVeh.data as ResultadoVehiculo[]) || [];
+  const whatsappUrl = generarUrlWhatsapp(codigoActual, filtro.titulo_producto);
 
   // 3. Obtener componentes incluidos si es un Kit o tiene relaciones internas
   let componentesKit: Filtro[] = [];

@@ -90,29 +90,59 @@ def normalize_code(code):
     return re.sub(r'[-_/\s]', '', code.strip().upper())
 
 
+def normalize_marca_vehiculo(marca_raw):
+    if not marca_raw:
+        return 'GENERAL'
+    clean = re.sub(r'\s+', ' ', marca_raw.strip().upper())
+    alias = {
+        'VW': 'VOLKSWAGEN',
+        'VW.': 'VOLKSWAGEN',
+        'VOLKS WAGEN': 'VOLKSWAGEN',
+        'VOLKS': 'VOLKSWAGEN',
+        'CHEV': 'CHEVROLET',
+        'CHEVR': 'CHEVROLET',
+        'MB': 'MERCEDES-BENZ',
+        'MERCEDES': 'MERCEDES-BENZ',
+        'MERCEDES BENZ': 'MERCEDES-BENZ',
+        'PEUG': 'PEUGEOT',
+        'CITROËN': 'CITROEN',
+    }
+    return alias.get(clean, clean)
+
+
+def clean_year_string(year_raw):
+    if not year_raw:
+        return None
+    cleaned = year_raw.replace("'", "->").replace("'", "->").replace("  ", " ").strip()
+    return cleaned if cleaned else None
+
+
 # ─── PHASE 1: Load Wega Vehicle CSV ──────────────────────────────────────────
 
 def load_wega_vehicles():
     vehicles = []
-    with open(WEGA_VEHICLES_CSV, 'r', encoding='utf-8-sig') as f:
+    with open(WEGA_VEHICLES_CSV, 'r', encoding='utf-8-sig', errors='replace') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            marca = (row.get('marca') or '').strip()
-            modelo = (row.get('modelo') or '').strip()
-            version = (row.get('version') or '').strip() or None
-            año = (row.get('año') or '').strip() or None
+            raw_marca = (row.get('marca') or '').strip()
+            raw_modelo = (row.get('modelo') or '').strip()
+            raw_version = (row.get('version') or '').strip() or None
+            raw_año = (row.get('año') or row.get('ao') or '').strip() or None
             filtro = (row.get('filtro_asociado') or '').strip()
 
-            if not marca or not modelo or not filtro:
+            if not raw_marca or not raw_modelo or not filtro:
                 continue
 
             if filtro.lower() in ('filtro_asociado', 'aceite', 'aire', 'combustible', 'habitaculo'):
                 continue
 
+            marca = normalize_marca_vehiculo(raw_marca)
+            año = clean_year_string(raw_año)
+
             vehicles.append({
                 "marca": marca,
-                "modelo": modelo,
-                "version": version,
+                "modelo": raw_modelo,
+                "version": raw_version,
                 "año": año,
                 "filtro_asociado": filtro,
             })
@@ -123,7 +153,7 @@ def load_wega_vehicles():
 
 def load_wega_equivalences():
     mapping = {}
-    with open(WEGA_EQUIV_CSV, 'r', encoding='utf-8-sig') as f:
+    with open(WEGA_EQUIV_CSV, 'r', encoding='utf-8-sig', errors='replace') as f:
         reader = csv.DictReader(f)
         for row in reader:
             wega = (row.get('wega') or '').strip()
@@ -142,7 +172,7 @@ def load_wega_equivalences():
     return mapping
 
 
-# ─── PHASE 3: Build Wega→Product mapping ──────────────────────────────────────
+# ─── PHASE 3: Build Wega->Product mapping ──────────────────────────────────────
 
 def build_wega_to_product_map(wega_equiv, existing_equiv, existing_products):
     """
@@ -171,7 +201,6 @@ def build_wega_to_product_map(wega_equiv, existing_equiv, existing_products):
     
     wega_to_products = {}
     
-    # Check all unique wega codes from equiv + vehicles
     all_wega_codes = set(wega_equiv.keys())
 
     matched = 0
@@ -215,19 +244,18 @@ def build_wega_to_product_map(wega_equiv, existing_equiv, existing_products):
 
 def main():
     print("=" * 70)
-    print("  WEGA VEHICLE DATABASE → SUPABASE IMPORT (FILTERED FOR OWN PRODUCTS)")
+    print("  WEGA VEHICLE DATABASE -> SUPABASE IMPORT (FILTERED FOR OWN PRODUCTS)")
     print("=" * 70)
 
     # ── Step 1: Load CSVs ────────────────────────────────────────────────────
     print("\n[1/6] Loading Wega vehicles CSV...")
     vehicles = load_wega_vehicles()
-    print(f"  ✓ Loaded {len(vehicles)} vehicle rows")
+    print(f"  OK: Loaded {len(vehicles)} vehicle rows")
 
     print("\n[2/6] Loading Wega equivalences CSV...")
     wega_equiv = load_wega_equivalences()
-    print(f"  ✓ Loaded {len(wega_equiv)} Wega equivalence entries")
+    print(f"  OK: Loaded {len(wega_equiv)} Wega equivalence entries")
 
-    # Add any vehicle filter codes to wega_equiv if not present
     for v in vehicles:
         f_code = v['filtro_asociado']
         if f_code not in wega_equiv:
@@ -236,17 +264,16 @@ def main():
     # ── Step 2: Fetch existing data from Supabase ───────────────────────────
     print("\n[3/6] Fetching existing products & equivalencias from Supabase...")
     existing_products = supabase_get_all("productos_filtrar", select="codigo_filtrar")
-    print(f"  ✓ Fetched {len(existing_products)} existing products")
+    print(f"  OK: Fetched {len(existing_products)} existing products")
 
     existing_equiv = supabase_get_all("equivalencias_cruza", 
         select="producto_codigo,marca_competidor,codigo_competidor,codigo_competidor_normalizado")
-    print(f"  ✓ Fetched {len(existing_equiv)} existing equivalences")
+    print(f"  OK: Fetched {len(existing_equiv)} existing equivalences")
 
-    # ── Step 3: Build Wega→Product map ───────────────────────────────────────
-    print("\n[4/6] Building Wega → Own Product mapping...")
+    # ── Step 3: Build Wega->Product map ───────────────────────────────────────
+    print("\n[4/6] Building Wega -> Own Product mapping...")
     wega_to_products = build_wega_to_product_map(wega_equiv, existing_equiv, existing_products)
 
-    # Prepare rows for vehiculos_filtrar using ONLY OWN PRODUCT CODES
     vehicle_rows_to_insert = []
     seen = set()
 
@@ -254,7 +281,6 @@ def main():
         wega_code = v['filtro_asociado']
         if wega_code in wega_to_products:
             for own_prod_code in wega_to_products[wega_code]:
-                # Skip KIT codes (Kits are specific bundles for designated vehicle models)
                 if own_prod_code.startswith('KIT'):
                     continue
 
@@ -269,13 +295,12 @@ def main():
                         "filtro_asociado": own_prod_code,
                     })
 
-    print(f"  ✓ Generated {len(vehicle_rows_to_insert)} vehicle-product association rows")
+    print(f"  OK: Generated {len(vehicle_rows_to_insert)} vehicle-product association rows")
 
-    # Marcas & Modelos counts
     marcas_set = {r['marca'] for r in vehicle_rows_to_insert}
     modelos_set = {(r['marca'], r['modelo']) for r in vehicle_rows_to_insert}
-    print(f"  ✓ Total unique Marcas with products: {len(marcas_set)}")
-    print(f"  ✓ Total unique Modelos with products: {len(modelos_set)}")
+    print(f"  OK: Total unique Marcas with products: {len(marcas_set)}")
+    print(f"  OK: Total unique Modelos with products: {len(modelos_set)}")
 
     # ── Step 4: Delete existing vehiculos_filtrar ────────────────────────────
     print("\n[5/6] Replacing vehiculos_filtrar data...")
@@ -294,13 +319,13 @@ def main():
             inserted += len(batch)
         else:
             errors += 1
-            print(f"\n  ✗ Batch {i//BATCH_SIZE+1} FAILED (status={status}): {body[:200]}")
+            print(f"\n  ERROR: Batch {i//BATCH_SIZE+1} FAILED (status={status}): {body[:200]}")
         
         pct = (inserted * 100) // len(vehicle_rows_to_insert)
         sys.stdout.write(f"\r  Progress: {inserted}/{len(vehicle_rows_to_insert)} ({pct}%) inserted, {errors} errors")
         sys.stdout.flush()
 
-    print(f"\n\n  ✓ DONE! Inserted {inserted} vehicle rows into vehiculos_filtrar")
+    print(f"\n\n  DONE! Inserted {inserted} vehicle rows into vehiculos_filtrar")
 
     # ── Step 6: Insert WEGA equivalences into equivalencias_cruza ────────────
     print("\n[BONUS] Syncing Wega equivalences into equivalencias_cruza...")
@@ -328,7 +353,7 @@ def main():
             status, body = supabase_post("equivalencias_cruza", batch)
             if status in (200, 201):
                 eq_inserted += len(batch)
-        print(f"  ✓ Inserted {eq_inserted} WEGA equivalences")
+        print(f"  OK: Inserted {eq_inserted} WEGA equivalences")
 
     print("\n" + "=" * 70)
     print("  SUCCESSFULLY UPDATED VEHICLE DATABASE!")
