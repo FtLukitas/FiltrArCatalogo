@@ -25,6 +25,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import type { Filtro } from '@/lib/types';
 import { formatearPrecio, normalizarImagenes } from '@/lib/utils';
+import { getOcultarPreciosGlobal } from '@/lib/preciosConfig';
 import { normalizarMarcaCompetidor, normalizarCodigoCruza, sanitizarVehiculo } from '@/lib/normalization';
 import TarjetaProducto from '@/app/componentes/TarjetaProducto';
 import ImageUploader from '../../componentes/ImageUploader';
@@ -89,6 +90,11 @@ export default function AdminEditarProductoPage() {
   const [imagenUrl, setImagenUrl] = useState('');
   const [activo, setActivo] = useState(true);
   const [ocultarPrecio, setOcultarPrecio] = useState(false);
+  const [ocultarGlobal, setOcultarGlobal] = useState(false);
+
+  useEffect(() => {
+    getOcultarPreciosGlobal().then(setOcultarGlobal);
+  }, []);
 
   // Cargar marcas dinámicamente desde la base de datos
   useEffect(() => {
@@ -184,12 +190,8 @@ export default function AdminEditarProductoPage() {
       setActivo(p.activo !== false);
       setOcultarPrecio(p.ocultar_precio === true);
 
-      const imgs = Array.isArray(p.imagen_url)
-        ? p.imagen_url[0]
-        : typeof p.imagen_url === 'string'
-          ? p.imagen_url
-          : '';
-      setImagenUrl(imgs || '');
+      const imgs = normalizarImagenes(p.imagen_url);
+      setImagenUrl(imgs.length > 0 ? imgs[0] : '');
 
       // Fetch Kit Components from relaciones_productos
       const { data: compRows } = await supabase
@@ -856,11 +858,29 @@ export default function AdminEditarProductoPage() {
                 onImageRemoved={() => setImagenUrl('')}
               />
 
-              {/* OCULTAR PRECIO INDIVIDUAL */}
+              {/* OCULTAR PRECIO INDIVIDUAL Y EXCEPCIONES */}
               <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-black text-white block">Ocultar Precio en Web Pública</span>
-                  <span className="text-[11px] text-slate-400 font-semibold block">Si se activa, mostrará "Consultar Precio" en lugar del valor numérico.</span>
+                  <span className="text-xs font-black text-white flex items-center gap-2 flex-wrap">
+                    <span>Ocultar Precio en Web Pública</span>
+                    {ocultarGlobal && !ocultarPrecio && (
+                      <span className="bg-emerald-500/20 text-emerald-300 text-[10px] px-2 py-0.5 rounded-full font-bold border border-emerald-500/30">
+                        ✨ Excepción: Precio Visible
+                      </span>
+                    )}
+                    {ocultarGlobal && ocultarPrecio && (
+                      <span className="bg-purple-500/20 text-purple-300 text-[10px] px-2 py-0.5 rounded-full font-bold border border-purple-500/30">
+                        🔒 Regla Global Activa
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-[11px] text-slate-400 font-semibold block mt-0.5">
+                    {ocultarGlobal
+                      ? ocultarPrecio
+                        ? 'Oculto por la regla global. Desmarcala si querés MOSTRAR este precio como excepción.'
+                        : '¡EXCEPCIÓN ACTIVA! Este precio se muestra en la web aunque el resto esté oculto.'
+                      : 'Si se activa, mostrará "Consultar Precio" en lugar del valor numérico.'}
+                  </span>
                 </div>
 
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -870,7 +890,9 @@ export default function AdminEditarProductoPage() {
                     onChange={(e) => setOcultarPrecio(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:translate-x-full peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                  <div className={`w-11 h-6 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${
+                    ocultarPrecio ? 'bg-purple-600' : 'bg-slate-800'
+                  }`}></div>
                 </label>
               </div>
 

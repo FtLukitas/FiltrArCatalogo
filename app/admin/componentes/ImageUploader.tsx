@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { UploadCloud, Image as ImageIcon, Loader2, X, CheckCircle2 } from 'lucide-react';
+import { normalizarImagenes } from '@/lib/utils';
 
 interface ImageUploaderProps {
-  currentUrl?: string | null;
+  currentUrl?: string | string[] | null;
   codigo: string;
   onImageUploaded: (url: string) => void;
   onImageRemoved?: () => void;
@@ -18,14 +19,17 @@ export default function ImageUploader({
 }: ImageUploaderProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [preview, setPreview] = useState<string | null>(currentUrl || null);
+  const [preview, setPreview] = useState<string | null>(() => {
+    const imgs = normalizarImagenes(currentUrl);
+    return imgs.length > 0 ? imgs[0] : null;
+  });
   const [fileInfo, setFileInfo] = useState<{ name: string; sizeKb: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sincronizar estado local de previsualización si la prop currentUrl cambia desde el padre
   useEffect(() => {
-    const validUrl = (currentUrl && currentUrl !== 'preview' && currentUrl !== '[]' && currentUrl !== 'null') ? currentUrl : null;
-    setPreview(validUrl);
+    const imgs = normalizarImagenes(currentUrl);
+    setPreview(imgs.length > 0 ? imgs[0] : null);
   }, [currentUrl]);
 
   const handleFileSelected = async (file: File) => {

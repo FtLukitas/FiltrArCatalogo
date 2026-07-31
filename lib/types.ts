@@ -13,7 +13,7 @@ export interface Filtro {
   buscador_unificado?: string | null;
   activo?: boolean;
   reemplazo_codigo?: string | null;
-  ocultar_precio?: boolean;
+  ocultar_precio?: boolean | null;
 }
 
 // Interface para los resultados de la búsqueda por vehículo (Tabla B)

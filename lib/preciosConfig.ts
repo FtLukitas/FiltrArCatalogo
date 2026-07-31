@@ -43,6 +43,15 @@ export const setOcultarPreciosGlobal = async (ocultar: boolean): Promise<boolean
     if (error) {
       console.warn('Upsert en configuracion_catalogo dio aviso:', error.message);
     }
+
+    if (ocultar) {
+      // Limpiar valores 'false' legacy para que todos los productos arranquen ocultados por la regla global sin falsas excepciones
+      await supabase
+        .from('productos_filtrar')
+        .update({ ocultar_precio: null })
+        .eq('ocultar_precio', false);
+    }
+
     return true;
   } catch (err) {
     console.error('Error al guardar estado global de precios:', err);
@@ -52,9 +61,23 @@ export const setOcultarPreciosGlobal = async (ocultar: boolean): Promise<boolean
 
 // Determina si se debe ocultar el precio de un producto específico o por regla global
 export const debeOcultarPrecio = (filtro?: Filtro | null, globalOcultar: boolean = false): boolean => {
-  if (globalOcultar) return true;
-  if (!filtro) return false;
-  if (filtro.ocultar_precio === true) return true;
-  if (filtro.precio === null || filtro.precio === undefined || isNaN(filtro.precio) || filtro.precio <= 0) return true;
-  return false;
+  if (!filtro) return globalOcultar;
+
+  // Si no tiene precio numérico válido, siempre ocultar
+  if (filtro.precio === null || filtro.precio === undefined || isNaN(filtro.precio) || filtro.precio <= 0) {
+    return true;
+  }
+
+  // 1. Forzado a ocultar individualmente
+  if (filtro.ocultar_precio === true) {
+    return true;
+  }
+
+  // 2. Forzado a mostrar como excepción explícita
+  if (filtro.ocultar_precio === false) {
+    return false;
+  }
+
+  // 3. Si es null o undefined, hereda la regla global del catálogo
+  return globalOcultar;
 };

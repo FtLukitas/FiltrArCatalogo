@@ -211,26 +211,43 @@ export default function AdminProductosPage() {
     }
   };
 
-  // Toggle ocultar precio individual
+  // Toggle ocultar precio individual con soporte de excepciones
   const handleToggleOcultarPrecio = async (producto: Filtro) => {
-    const nuevoOcultar = !producto.ocultar_precio;
+    let nuevoValorOcultar: boolean | null = null;
+
+    if (ocultarGlobal) {
+      // Si el catálogo está oculto globalmente:
+      // Si actualmente es excepción (false), quitar excepción (null -> se oculta por regla global)
+      // Si está oculto, poner como excepción (false -> se muestra el precio)
+      nuevoValorOcultar = producto.ocultar_precio === false ? null : false;
+    } else {
+      // Si el catálogo está visible globalmente:
+      // Si está oculto individualmente (true), mostrarlo (null)
+      // Si está visible, ocultarlo individualmente (true)
+      nuevoValorOcultar = producto.ocultar_precio === true ? null : true;
+    }
+
     try {
       const { error } = await supabase
         .from('productos_filtrar')
-        .update({ ocultar_precio: nuevoOcultar })
+        .update({ ocultar_precio: nuevoValorOcultar })
         .eq('id', producto.id);
 
       if (error) throw error;
 
       setProductos((prev) =>
-        prev.map((p) => (p.id === producto.id ? { ...p, ocultar_precio: nuevoOcultar } : p))
+        prev.map((p) => (p.id === producto.id ? { ...p, ocultar_precio: nuevoValorOcultar } : p))
       );
+
+      const esVisibleAhora = !debeOcultarPrecio({ ...producto, ocultar_precio: nuevoValorOcultar }, ocultarGlobal);
 
       setToast({
         id: Date.now().toString(),
         type: 'success',
-        title: `Precio ${nuevoOcultar ? 'oculto' : 'visible'}`,
-        message: `El precio de ${producto.codigo_filtrar} ahora está ${nuevoOcultar ? 'oculto' : 'visible'} individualmente.`,
+        title: `Precio de ${producto.codigo_filtrar}`,
+        message: esVisibleAhora
+          ? `El precio de ${producto.codigo_filtrar} ahora está VISIBLE ${ocultarGlobal ? '(Excepción al ocultamiento global)' : ''}.`
+          : `El precio de ${producto.codigo_filtrar} ahora está OCULTADO.`,
       });
     } catch (err: any) {
       setToast({
@@ -422,14 +439,24 @@ export default function AdminProductosPage() {
           onClick={async () => {
             const nuevoEstado = !ocultarGlobal;
             setOcultarGlobal(nuevoEstado);
+
+            if (nuevoEstado) {
+              setProductos((prev) =>
+                prev.map((p) => ({
+                  ...p,
+                  ocultar_precio: p.ocultar_precio === false ? null : p.ocultar_precio,
+                }))
+              );
+            }
+
             await setOcultarPreciosGlobal(nuevoEstado);
             setToast({
               id: Date.now().toString(),
               type: 'success',
               title: nuevoEstado ? 'Precios ocultos globalmente' : 'Precios visibles globalmente',
               message: nuevoEstado
-                ? 'Todos los productos mostrarán "Consultar Precio" en la web.'
-                : 'Se mostrarán los precios numéricos en la web pública.',
+                ? 'Todos los productos muestran "Consultar Precio". Podés hacer clic en el ojito de cualquier producto para mostrarlo como excepción.'
+                : 'Se muestran los precios numéricos en la web pública.',
             });
           }}
           className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all shadow-md shrink-0 flex items-center gap-2 ${
@@ -633,25 +660,63 @@ export default function AdminProductosPage() {
                         {p.marca_filtro || '-'}
                       </td>
 
-                      {/* PRECIO CON CONTROL DE OCULTAMIENTO */}
+                      {/* PRECIO CON CONTROL DE OCULTAMIENTO Y EXCEPCIONES */}
                       <td className="p-4">
-                        <div className="flex items-center gap-2">
-                          <span className={`font-black text-xs ${p.ocultar_precio ? 'text-purple-400 opacity-90' : 'text-white'}`}>
-                            {formatearPrecio(p.precio, p.ocultar_precio)}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleToggleOcultarPrecio(p)}
-                            title={p.ocultar_precio ? 'Precio OCULTO individualmente. Clic para MOSTRAR.' : 'Precio VISIBLE. Clic para OCULTAR en la web.'}
-                            className={`p-1.5 rounded-lg border transition-all ${
-                              p.ocultar_precio
-                                ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 hover:bg-purple-500/30'
-                                : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white hover:bg-slate-700'
-                            }`}
-                          >
-                            {p.ocultar_precio ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                          </button>
-                        </div>
+                        {(() => {
+                          const estaOcultoFinal = debeOcultarPrecio(p, ocultarGlobal);
+                          const esExcepcionVisible = ocultarGlobal && p.ocultar_precio === false;
+
+                          return (
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`font-black text-xs ${
+                                  esExcepcionVisible
+                                    ? 'text-emerald-400 font-extrabold'
+                                    : estaOcultoFinal
+                                      ? 'text-purple-400 opacity-90'
+                                      : 'text-white'
+                                }`}
+                              >
+                                {formatearPrecio(p.precio, estaOcultoFinal)}
+                              </span>
+
+                              <button
+                                type="button"
+                                onClick={() => handleToggleOcultarPrecio(p)}
+                                title={
+                                  ocultarGlobal
+                                    ? esExcepcionVisible
+                                      ? 'Excepción activa (Precio Visible). Clic para volver a ocultar.'
+                                      : 'Clic para mostrar este precio como EXCEPCIÓN al ocultamiento global.'
+                                    : p.ocultar_precio === true
+                                      ? 'Precio oculto individualmente. Clic para mostrar.'
+                                      : 'Precio visible. Clic para ocultar individualmente.'
+                                }
+                                className={`p-1.5 rounded-lg border transition-all ${
+                                  esExcepcionVisible
+                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                                    : estaOcultoFinal
+                                      ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 hover:bg-purple-500/30'
+                                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white hover:bg-slate-700'
+                                }`}
+                              >
+                                {esExcepcionVisible ? (
+                                  <Eye className="w-3.5 h-3.5 text-emerald-300" />
+                                ) : estaOcultoFinal ? (
+                                  <EyeOff className="w-3.5 h-3.5 text-purple-300" />
+                                ) : (
+                                  <Eye className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+
+                              {esExcepcionVisible && (
+                                <span className="bg-emerald-500/20 text-emerald-300 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border border-emerald-500/30">
+                                  Excepción
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
 
                       {/* ESTADO (TOGGLE) */}
