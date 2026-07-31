@@ -16,7 +16,7 @@ const CATEGORIAS = [
   'Filtros Varios',
 ];
 
-const MARCAS_FILTRO = ['TODAS', 'Pro Filter', 'Maxfil', 'MDH', 'Picborg', 'Common Rail', 'Genérico'];
+const MARCAS_FILTRO = ['TODAS', 'Pro Filter', 'Maxfil', 'MDH', 'Picborg', 'Genérico'];
 
 const ITEMS_POR_PAGINA = 25;
 
@@ -34,7 +34,7 @@ export default function CatalogoProductos({ initialSearch = '', initialCategoria
   const [marcaSeleccionada, setMarcaSeleccionada] = useState('TODAS');
   const [busquedaTexto, setBusquedaTexto] = useState(initialSearch);
   const [orden, setOrden] = useState<'codigo-asc' | 'codigo-desc' | 'precio-asc' | 'precio-desc'>('codigo-asc');
-  const [marcasDinamicas, setMarcasDinamicas] = useState<string[]>(['TODAS', 'Pro Filter', 'Maxfil', 'MDH', 'Picborg', 'Common Rail']);
+  const [marcasDinamicas, setMarcasDinamicas] = useState<string[]>(['TODAS', 'Pro Filter', 'Maxfil', 'MDH', 'Picborg']);
 
   // Cargar marcas de filtros existentes dinámicamente desde la base de datos
   useEffect(() => {

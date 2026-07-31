@@ -25,7 +25,6 @@ const MARCAS_LISTA = [
   'Maxfil',
   'MDH',
   'Picborg',
-  'Common Rail',
   'Genérico'
 ];
 

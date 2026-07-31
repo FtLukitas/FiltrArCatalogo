@@ -74,7 +74,7 @@ export default function BuscadorVehiculo() {
     const fetchMarcas = async () => {
       setLoadingMarcas(true);
       try {
-        const allMarcas: string[] = [];
+        const marcaMap = new Map<string, string>();
         let offset = 0;
         const pageSize = 1000;
         let hasMore = true;
@@ -88,9 +88,12 @@ export default function BuscadorVehiculo() {
           if (error || !data) break;
 
           data.forEach((row: any) => {
-            const m = (row.marca || '').trim();
-            if (m && !allMarcas.includes(m)) {
-              allMarcas.push(m);
+            const m = (row.marca || '').trim().replace(/\s+/g, ' ');
+            if (m) {
+              const lower = m.toLowerCase();
+              if (!marcaMap.has(lower)) {
+                marcaMap.set(lower, m);
+              }
             }
           });
 
@@ -98,8 +101,10 @@ export default function BuscadorVehiculo() {
           offset += pageSize;
         }
 
-        allMarcas.sort((a, b) => a.localeCompare(b, 'es'));
-        setMarcas(allMarcas);
+        const sortedMarcas = Array.from(marcaMap.values()).sort((a, b) =>
+          a.localeCompare(b, 'es', { numeric: true, sensitivity: 'base' })
+        );
+        setMarcas(sortedMarcas);
       } catch (err) {
         console.error('Error cargando marcas:', err);
       } finally {
@@ -121,7 +126,7 @@ export default function BuscadorVehiculo() {
       setModeloSeleccionado('');
       setVersiones([]);
       try {
-        const allModelos: string[] = [];
+        const modeloMap = new Map<string, string>();
         let offset = 0;
         const pageSize = 1000;
         let hasMore = true;
@@ -136,9 +141,12 @@ export default function BuscadorVehiculo() {
           if (error || !data) break;
 
           data.forEach((row: any) => {
-            const m = (row.modelo || '').trim();
-            if (m && !allModelos.includes(m)) {
-              allModelos.push(m);
+            const m = (row.modelo || '').trim().replace(/\s+/g, ' ');
+            if (m) {
+              const lower = m.toLowerCase();
+              if (!modeloMap.has(lower)) {
+                modeloMap.set(lower, m);
+              }
             }
           });
 
@@ -146,8 +154,10 @@ export default function BuscadorVehiculo() {
           offset += pageSize;
         }
 
-        allModelos.sort((a, b) => a.localeCompare(b, 'es'));
-        setModelos(allModelos);
+        const sortedModelos = Array.from(modeloMap.values()).sort((a, b) =>
+          a.localeCompare(b, 'es', { numeric: true, sensitivity: 'base' })
+        );
+        setModelos(sortedModelos);
       } catch (err) {
         console.error('Error cargando modelos:', err);
       } finally {

@@ -33,7 +33,7 @@ import ConfirmModal from '../../componentes/ConfirmModal';
 import AdminToast, { ToastMessage } from '../../componentes/AdminToast';
 
 const CATEGORIAS = ['Filtros de Aceite', 'Filtros de Aire', 'Filtros de Combustible', 'Filtros de Habitáculo', 'Kits de Filtros'];
-const MARCAS = ['Pro Filter', 'Maxfil', 'MDH', 'Picborg', 'Common Rail'];
+const MARCAS = ['Pro Filter', 'Maxfil', 'MDH', 'Picborg'];
 
 interface Equivalencia {
   id: number;
@@ -82,7 +82,7 @@ export default function AdminEditarProductoPage() {
   const [marca, setMarca] = useState('Pro Filter');
   const [isCustomMarcaSelected, setIsCustomMarcaSelected] = useState(false);
   const [customMarcaText, setCustomMarcaText] = useState('');
-  const [marcasExistentes, setMarcasExistentes] = useState<string[]>(['Pro Filter', 'Maxfil', 'MDH', 'Picborg', 'Common Rail', 'Mareno', 'Wega', 'Mann', 'Fram', 'Tecfil', 'Mahle']);
+  const [marcasExistentes, setMarcasExistentes] = useState<string[]>(['Pro Filter', 'Maxfil', 'MDH', 'Picborg', 'Mareno', 'Wega', 'Mann', 'Fram', 'Tecfil', 'Mahle']);
 
   const [precio, setPrecio] = useState<number | ''>('');
   const [dimensiones, setDimensiones] = useState('');

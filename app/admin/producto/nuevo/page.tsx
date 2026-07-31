@@ -34,7 +34,7 @@ export default function AdminNuevoProductoPage() {
   const [marca, setMarca] = useState('Pro Filter');
   const [isCustomMarcaSelected, setIsCustomMarcaSelected] = useState(false);
   const [customMarcaText, setCustomMarcaText] = useState('');
-  const [marcasExistentes, setMarcasExistentes] = useState<string[]>(['Pro Filter', 'Maxfil', 'MDH', 'Picborg', 'Common Rail', 'Mareno', 'Wega', 'Mann', 'Fram', 'Tecfil', 'Mahle']);
+  const [marcasExistentes, setMarcasExistentes] = useState<string[]>(['Pro Filter', 'Maxfil', 'MDH', 'Picborg', 'Mareno', 'Wega', 'Mann', 'Fram', 'Tecfil', 'Mahle']);
 
   const [precio, setPrecio] = useState<number | ''>('');
   const [dimensiones, setDimensiones] = useState('');

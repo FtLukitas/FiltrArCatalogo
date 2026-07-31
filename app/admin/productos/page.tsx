@@ -33,7 +33,7 @@ import ConfirmModal from '../componentes/ConfirmModal';
 import AdminToast, { ToastMessage } from '../componentes/AdminToast';
 
 const CATEGORIAS = ['Todas', 'Aceite', 'Aire', 'Combustible', 'Habitáculo', 'Inyección', 'Kits'];
-const MARCAS = ['Todas', 'Pro Filter', 'Maxfil', 'MDH', 'Picborg', 'Common Rail'];
+const MARCAS = ['Todas', 'Pro Filter', 'Maxfil', 'MDH', 'Picborg'];
 const PAGE_SIZE = 25;
 
 export default function AdminProductosPage() {
