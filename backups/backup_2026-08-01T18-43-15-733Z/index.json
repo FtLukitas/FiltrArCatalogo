@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-08-01T18:43:18.881Z",
+  "project": "FiltrAr",
+  "tables": {
+    "productos_filtrar": 1292,
+    "equivalencias_cruza": 6632,
+    "vehiculos_filtrar": 9987,
+    "relaciones_productos": 250,
+    "configuracion_catalogo": 1
+  }
+}

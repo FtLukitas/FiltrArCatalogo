@@ -1,7 +1,7 @@
 import SmartSearch from './componentes/SmartSearch';
 import BuscadorVehiculo from './componentes/BuscadorVehiculo';
 import ResultadoBuscador from './componentes/ResultadoBuscador';
-import { Package, Layers, Truck, MessageCircle, Building2 } from 'lucide-react';
+import { Package, Layers, MessageCircle } from 'lucide-react';
 
 export default function HomePage() {
   return (

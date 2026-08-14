@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { MessageCircle } from 'lucide-react';
+import { WHATSAPP_NUMBER } from '@/lib/constants';
 
 export default function WhatsAppButton() {
   const pathname = usePathname();
@@ -9,7 +10,7 @@ export default function WhatsAppButton() {
 
   return (
     <a
-      href="https://wa.me/5491132881901?text=Hola!%20Quisiera%20consultar%20sobre%20los%20filtros%20del%20cat%C3%A1logo%20FiltrAr"
+      href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hola!%20Quisiera%20consultar%20sobre%20los%20filtros%20del%20cat%C3%A1logo%20FiltrAr`}
       target="_blank"
       rel="noopener noreferrer"
       className="fixed bottom-6 right-6 z-50 bg-emerald-500 hover:bg-emerald-600 text-white p-4 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center border-2 border-white/20 group"

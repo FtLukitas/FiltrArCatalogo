@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Phone, Mail, MapPin, Shield, ChevronRight } from 'lucide-react';
+import { WHATSAPP_NUMBER } from '@/lib/constants';
 
 export default function Footer() {
   const pathname = usePathname();
@@ -74,7 +75,7 @@ export default function Footer() {
                 <span>Distribución a todo el país. Buenos Aires, Argentina.</span>
               </div>
               <a
-                href="https://wa.me/5491132881901?text=Hola!%20Quisiera%20hacer%20una%20consulta%20comercial%20desde%20el%20cat%C3%A1logo%20FiltrAr"
+                href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hola!%20Quisiera%20hacer%20una%20consulta%20comercial%20desde%20el%20cat%C3%A1logo%20FiltrAr`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2.5 hover:text-blue-400 transition-colors"

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -21,19 +21,18 @@ import {
   Boxes,
   ListFilter,
   PenTool,
+  Search,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { Filtro } from '@/lib/types';
 import { formatearPrecio, normalizarImagenes } from '@/lib/utils';
 import { getOcultarPreciosGlobal } from '@/lib/preciosConfig';
 import { normalizarMarcaCompetidor, normalizarCodigoCruza, sanitizarVehiculo } from '@/lib/normalization';
+import { CATEGORIAS_FILTRO } from '@/lib/constants';
 import TarjetaProducto from '@/app/componentes/TarjetaProducto';
 import ImageUploader from '../../componentes/ImageUploader';
 import ConfirmModal from '../../componentes/ConfirmModal';
 import AdminToast, { ToastMessage } from '../../componentes/AdminToast';
-
-const CATEGORIAS = ['Filtros de Aceite', 'Filtros de Aire', 'Filtros de Combustible', 'Filtros de Habitáculo', 'Kits de Filtros'];
-const MARCAS = ['Pro Filter', 'Maxfil', 'MDH', 'Picborg'];
 
 interface Equivalencia {
   id: number;
@@ -57,6 +56,31 @@ interface ComponenteKit {
   tipo_relacion: string;
   codigo_relacionado: string;
   detalle?: Filtro | null;
+}
+
+const POPULAR_COMPETITOR_BRANDS = ['WEGA', 'MANN', 'FRAM', 'OEM', 'MARENO', 'TECNECO', 'MASTERFILT', 'MAHLE'];
+
+function getCompetitorBadgeStyle(marcaRaw: string) {
+  const m = (marcaRaw || '').toUpperCase();
+  if (m === 'WEGA') {
+    return 'bg-sky-500/15 text-sky-300 border-sky-500/30';
+  }
+  if (m === 'MANN' || m === 'MANN-FILTER') {
+    return 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30';
+  }
+  if (m === 'FRAM') {
+    return 'bg-orange-500/15 text-orange-300 border-orange-500/30';
+  }
+  if (m === 'OEM' || m === 'ORIGINAL') {
+    return 'bg-purple-500/15 text-purple-300 border-purple-500/30';
+  }
+  if (m === 'MARENO') {
+    return 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30';
+  }
+  if (m === 'TECNECO' || m === 'MASTERFILT' || m === 'MAHLE') {
+    return 'bg-amber-500/15 text-amber-300 border-amber-500/30';
+  }
+  return 'bg-slate-800 text-slate-300 border-slate-700';
 }
 
 export default function AdminEditarProductoPage() {
@@ -178,11 +202,17 @@ export default function AdminEditarProductoPage() {
 
   // Vehicles State
   const [vehiculos, setVehiculos] = useState<VehiculoAsociado[]>([]);
-  const [newVehMarca, setNewVehMarca] = useState('');
+  const [newVehMarca, setNewVehMarca] = useState('VOLKSWAGEN');
   const [newVehModelo, setNewVehModelo] = useState('');
   const [newVehVersion, setNewVehVersion] = useState('');
   const [newVehAño, setNewVehAño] = useState('');
   const [addingVeh, setAddingVeh] = useState(false);
+
+  // Smart Autocomplete Quick-Search Linker
+  const [vehQuickSearch, setVehQuickSearch] = useState('');
+  const [vehQuickResults, setVehQuickResults] = useState<any[]>([]);
+  const [isSearchingVeh, setIsSearchingVeh] = useState(false);
+  const [showManualVehForm, setShowManualVehForm] = useState(false);
 
   // Master Vehicles catalog (for dropdown selectors)
   const [masterBrands, setMasterBrands] = useState<string[]>([]);
@@ -190,6 +220,46 @@ export default function AdminEditarProductoPage() {
   const [vehFormMode, setVehFormMode] = useState<'existing' | 'custom'>('existing');
   const [isCustomModelSelected, setIsCustomModelSelected] = useState(false);
   const [customModelText, setCustomModelText] = useState('');
+
+  // Live Smart Vehicle Search for instant 1-click linking
+  useEffect(() => {
+    const q = vehQuickSearch.trim();
+    if (q.length < 2) {
+      setVehQuickResults([]);
+      setIsSearchingVeh(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingVeh(true);
+      try {
+        const { data } = await supabase
+          .from('vehiculos_filtrar')
+          .select('*')
+          .or(`marca.ilike.%${q}%,modelo.ilike.%${q}%,version.ilike.%${q}%`)
+          .limit(12);
+
+        if (data) {
+          const seen = new Set<string>();
+          const unique: any[] = [];
+          (data as any[]).forEach((v) => {
+            const key = `${v.marca}__${v.modelo}__${v.version || ''}__${v.año || ''}`.toUpperCase();
+            if (!seen.has(key)) {
+              seen.add(key);
+              unique.push(v);
+            }
+          });
+          setVehQuickResults(unique);
+        }
+      } catch (err) {
+        console.error('Error buscando vehiculos:', err);
+      } finally {
+        setIsSearchingVeh(false);
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [vehQuickSearch]);
 
   // Delete modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -623,6 +693,75 @@ export default function AdminEditarProductoPage() {
     }
   };
 
+  // Quick Link Vehicle from Search Autocomplete
+  const handleQuickLinkVehicle = async (v: { marca: string; modelo: string; version: string | null; año: string | null }) => {
+    try {
+      const newRow = {
+        marca: v.marca.toUpperCase().trim(),
+        modelo: v.modelo.trim(),
+        version: v.version?.trim() || null,
+        año: v.año?.trim() || null,
+        filtro_asociado: codigo,
+      };
+
+      const { data, error } = await supabase
+        .from('vehiculos_filtrar')
+        .insert([newRow])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setVehiculos((prev) => [...prev, data as VehiculoAsociado]);
+      setVehQuickSearch('');
+      setVehQuickResults([]);
+      setToast({
+        id: Date.now().toString(),
+        type: 'success',
+        title: 'Vehículo asociado',
+        message: `${v.marca} ${v.modelo} ${v.version || ''} vinculado correctamente.`,
+      });
+    } catch (err: any) {
+      setToast({ id: Date.now().toString(), type: 'error', title: 'Error al asociar', message: err.message });
+    }
+  };
+
+  // Grouped vehicles by Brand & Model for clean intuitive visual hierarchy
+  const groupedProductVehicles = useMemo(() => {
+    const map: Record<string, Record<string, VehiculoAsociado[]>> = {};
+
+    vehiculos.forEach((v) => {
+      const b = (v.marca || 'GENÉRICO').toUpperCase().trim();
+      const m = (v.modelo || 'VARIOS').trim();
+
+      if (!map[b]) map[b] = {};
+      if (!map[b][m]) map[b][m] = [];
+      map[b][m].push(v);
+    });
+
+    const result: {
+      marca: string;
+      totalApps: number;
+      modelos: { modelo: string; items: VehiculoAsociado[] }[];
+    }[] = [];
+
+    Object.keys(map).sort().forEach((brand) => {
+      const modelsObj = map[brand];
+      const modelsList: { modelo: string; items: VehiculoAsociado[] }[] = [];
+      let totalApps = 0;
+
+      Object.keys(modelsObj).sort().forEach((model) => {
+        const items = modelsObj[model];
+        totalApps += items.length;
+        modelsList.push({ modelo: model, items });
+      });
+
+      result.push({ marca: brand, totalApps, modelos: modelsList });
+    });
+
+    return result;
+  }, [vehiculos]);
+
   // Delete Vehicle Association
   const handleDeleteVehiculo = async (id: number) => {
     try {
@@ -721,7 +860,7 @@ export default function AdminEditarProductoPage() {
           <Link
             href={`/producto/${encodeURIComponent(codigo)}`}
             target="_blank"
-            className="p-2.5 bg-slate-900 border border-slate-800 rounded-2xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all flex items-center gap-2 text-xs font-bold"
+            className="p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all flex items-center gap-2 text-xs font-bold"
           >
             <Eye className="w-4 h-4" />
             <span>Ver en Web</span>
@@ -729,7 +868,7 @@ export default function AdminEditarProductoPage() {
 
           <button
             onClick={() => setShowDeleteModal(true)}
-            className="p-2.5 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 rounded-2xl transition-all flex items-center gap-2 text-xs font-bold"
+            className="p-2.5 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 rounded-lg transition-all flex items-center gap-2 text-xs font-bold"
           >
             <Trash2 className="w-4 h-4" />
             <span>Eliminar</span>
@@ -741,7 +880,7 @@ export default function AdminEditarProductoPage() {
       <div className="flex items-center gap-2 border-b border-slate-800 pb-1 overflow-x-auto">
         <button
           onClick={() => setActiveTab('datos')}
-          className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 shrink-0 ${activeTab === 'datos'
+          className={`px-4 py-2.5 rounded-lg text-xs font-black transition-all flex items-center gap-2 shrink-0 ${activeTab === 'datos'
               ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
             }`}
@@ -752,7 +891,7 @@ export default function AdminEditarProductoPage() {
 
         <button
           onClick={() => setActiveTab('componentes')}
-          className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 shrink-0 ${activeTab === 'componentes'
+          className={`px-4 py-2.5 rounded-lg text-xs font-black transition-all flex items-center gap-2 shrink-0 ${activeTab === 'componentes'
               ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
               : isKit
                 ? 'bg-purple-950/40 text-purple-300 border border-purple-800/50 hover:bg-purple-900/40'
@@ -765,7 +904,7 @@ export default function AdminEditarProductoPage() {
 
         <button
           onClick={() => setActiveTab('equivalencias')}
-          className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 shrink-0 ${activeTab === 'equivalencias'
+          className={`px-4 py-2.5 rounded-lg text-xs font-black transition-all flex items-center gap-2 shrink-0 ${activeTab === 'equivalencias'
               ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
             }`}
@@ -776,7 +915,7 @@ export default function AdminEditarProductoPage() {
 
         <button
           onClick={() => setActiveTab('vehiculos')}
-          className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 shrink-0 ${activeTab === 'vehiculos'
+          className={`px-4 py-2.5 rounded-lg text-xs font-black transition-all flex items-center gap-2 shrink-0 ${activeTab === 'vehiculos'
               ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
             }`}
@@ -791,7 +930,7 @@ export default function AdminEditarProductoPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start animate-fade-in">
           {/* FORMULARIO (7 COLUMNAS) */}
           <form onSubmit={handleSubmit} className="lg:col-span-7 space-y-6">
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-6 shadow-2xl">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-6 shadow-2xl">
               <div>
                 <label className="block text-[11px] font-black uppercase tracking-wider text-slate-400 mb-1.5">
                   Título del Producto
@@ -801,7 +940,7 @@ export default function AdminEditarProductoPage() {
                   value={titulo}
                   onChange={(e) => setTitulo(e.target.value)}
                   placeholder="Ej: Kit de Filtros Toyota Hilux 2.8"
-                  className="w-full p-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-sm font-bold text-white outline-none focus:border-blue-500 transition-all"
+                  className="w-full p-3.5 bg-slate-950 border border-slate-800 rounded-lg text-sm font-bold text-white outline-none focus:border-blue-500 transition-all"
                 />
               </div>
 
@@ -813,9 +952,9 @@ export default function AdminEditarProductoPage() {
                   <select
                     value={categoria}
                     onChange={(e) => setCategoria(e.target.value)}
-                    className="w-full p-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-blue-500 transition-all cursor-pointer"
+                    className="w-full p-3.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-bold text-white outline-none focus:border-blue-500 transition-all cursor-pointer"
                   >
-                    {CATEGORIAS.map((c) => (
+                    {CATEGORIAS_FILTRO.map((c) => (
                       <option key={c} value={c}>
                         {c}
                       </option>
@@ -840,7 +979,7 @@ export default function AdminEditarProductoPage() {
                         setMarca(val);
                       }
                     }}
-                    className="w-full p-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-blue-500 transition-all cursor-pointer mb-2"
+                    className="w-full p-3.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-bold text-white outline-none focus:border-blue-500 transition-all cursor-pointer mb-2"
                   >
                     {marcasExistentes.map((m) => (
                       <option key={m} value={m}>
@@ -871,7 +1010,7 @@ export default function AdminEditarProductoPage() {
                     value={precio}
                     onChange={(e) => setPrecio(e.target.value ? Number(e.target.value) : '')}
                     placeholder="0"
-                    className="w-full p-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-sm font-black text-white outline-none focus:border-blue-500 transition-all"
+                    className="w-full p-3.5 bg-slate-950 border border-slate-800 rounded-lg text-sm font-black text-white outline-none focus:border-blue-500 transition-all"
                   />
                 </div>
               </div>
@@ -911,7 +1050,7 @@ export default function AdminEditarProductoPage() {
                     value={dimensiones}
                     onChange={(e) => setDimensiones(e.target.value)}
                     placeholder="Ej: DE: 135mm | DI: 70mm | Alt: 280mm  ó  Largo: 240mm, Ancho: 180mm  ó  PICO 8 MM"
-                    className="w-full p-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-blue-500 transition-all placeholder:text-slate-600"
+                    className="w-full p-3.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-bold text-white outline-none focus:border-blue-500 transition-all placeholder:text-slate-600"
                   />
                 </div>
 
@@ -924,7 +1063,7 @@ export default function AdminEditarProductoPage() {
                     value={descripcion}
                     onChange={(e) => setDescripcion(e.target.value)}
                     placeholder="Ej: Compatible con Toyota Hilux 2.4 / 2.8 TDi (2015 en adelante), SW4..."
-                    className="w-full p-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-blue-500 transition-all resize-y"
+                    className="w-full p-3.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-bold text-white outline-none focus:border-blue-500 transition-all resize-y"
                   />
                 </div>
               </div>
@@ -996,7 +1135,7 @@ export default function AdminEditarProductoPage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="px-6 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs rounded-2xl flex items-center gap-2 transition-all shadow-lg shadow-blue-600/25 disabled:opacity-50"
+                className="px-6 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs rounded-lg flex items-center gap-2 transition-all shadow-lg shadow-blue-600/25 disabled:opacity-50"
               >
                 {saving ? (
                   <>
@@ -1015,7 +1154,7 @@ export default function AdminEditarProductoPage() {
 
           {/* SIDEBAR VISTA PREVIA EN VIVO (5 COLUMNAS STICKY) */}
           <aside className="lg:col-span-5 sticky top-6 space-y-3">
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-2xl space-y-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-2xl space-y-4">
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
                   <Eye className="w-4 h-4 text-blue-400" />
@@ -1024,7 +1163,7 @@ export default function AdminEditarProductoPage() {
 
               </div>
 
-              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80 flex items-center justify-center">
+              <div className="bg-slate-950 p-4 rounded-lg border border-slate-800/80 flex items-center justify-center">
                 <div className="w-full max-w-sm">
                   <TarjetaProducto filtro={{
                     id: product.id,
@@ -1053,7 +1192,7 @@ export default function AdminEditarProductoPage() {
       {/* TAB 2: COMPONENTES DEL KIT */}
       {activeTab === 'componentes' && (
         <div className="space-y-6 animate-fade-in">
-          <div className="bg-purple-950/30 border border-purple-800/50 rounded-3xl p-6 text-purple-200 space-y-2">
+          <div className="bg-purple-950/30 border border-purple-800/50 rounded-xl p-6 text-purple-200 space-y-2">
             <div className="flex items-center gap-2 text-purple-400 font-black text-sm uppercase tracking-wider">
               <Boxes className="w-5 h-5" />
               <span>Gestión de Componentes del Kit</span>
@@ -1063,7 +1202,7 @@ export default function AdminEditarProductoPage() {
             </p>
           </div>
 
-          <form onSubmit={handleAddComponente} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
+          <form onSubmit={handleAddComponente} className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-2xl space-y-4">
             <h3 className="text-sm font-black text-white flex items-center gap-2">
               <Plus className="w-4 h-4 text-purple-400" />
               <span>Agregar Filtro / Componente al Kit {codigo}</span>
@@ -1087,7 +1226,7 @@ export default function AdminEditarProductoPage() {
                     }}
                     onFocus={() => setShowCompDropdown(true)}
                     placeholder="Buscá por código, título o modelo, o escribí un código nuevo..."
-                    className="w-full p-3.5 pl-4 pr-10 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-mono font-bold text-white outline-none focus:border-purple-500 uppercase placeholder:normal-case placeholder:text-slate-600"
+                    className="w-full p-3.5 pl-4 pr-10 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono font-bold text-white outline-none focus:border-purple-500 uppercase placeholder:normal-case placeholder:text-slate-600"
                     required
                   />
 
@@ -1098,7 +1237,7 @@ export default function AdminEditarProductoPage() {
 
                 {/* DROPDOWN SMART SEARCH DE COMPONENTES */}
                 {showCompDropdown && compSearchResults.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl z-50 overflow-hidden divide-y divide-slate-800 max-h-60 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl z-50 overflow-hidden divide-y divide-slate-800 max-h-60 overflow-y-auto">
                     <div className="p-2.5 bg-slate-950 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex justify-between items-center">
                       <span>Sugerencias Encontradas ({compSearchResults.length})</span>
                       <button
@@ -1154,7 +1293,7 @@ export default function AdminEditarProductoPage() {
                 <button
                   type="submit"
                   disabled={addingComp}
-                  className="w-full sm:w-auto px-6 py-3.5 bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-600/20 shrink-0"
+                  className="w-full sm:w-auto px-6 py-3.5 bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-600/20 shrink-0"
                 >
                   {addingComp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                   <span>Agregar al Kit</span>
@@ -1163,7 +1302,7 @@ export default function AdminEditarProductoPage() {
             </div>
           </form>
 
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
             {componentes.length > 0 ? (
               <div className="divide-y divide-slate-800/60">
                 {componentes.map((c) => {
@@ -1176,7 +1315,7 @@ export default function AdminEditarProductoPage() {
                       className="p-4 sm:p-5 flex items-center justify-between gap-4 hover:bg-slate-800/40 transition-colors"
                     >
                       <div className="flex items-center gap-4 min-w-0">
-                        <div className="w-12 h-12 rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center shrink-0">
+                        <div className="w-12 h-12 rounded-lg bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center shrink-0">
                           {imgs[0] ? (
                             <img src={imgs[0]} alt={c.codigo_relacionado} className="w-full h-full object-cover" />
                           ) : (
@@ -1243,322 +1382,487 @@ export default function AdminEditarProductoPage() {
         </div>
       )}
 
-      {/* TAB 3: EQUIVALENCIAS */}
+      {/* TAB 3: EQUIVALENCIAS (MATRIZ VISUAL CON PASTILLAS DE COLOR + SELECTOR RÁPIDO DE MARCA) */}
       {activeTab === 'equivalencias' && (
-        <div className="space-y-6 animate-fade-in">
-          <form onSubmit={handleAddEquivalencia} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
-            <h3 className="text-sm font-black text-white flex items-center gap-2">
-              <Plus className="w-4 h-4 text-blue-400" />
-              <span>Agregar Nueva Equivalencia para {codigo}</span>
-            </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="space-y-4 animate-fade-in">
+          {/* HEADER & RESUMEN DEL TAB */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900 border border-slate-800 p-3.5 rounded-xl">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                <ArrowLeftRight className="w-4 h-4" />
+              </div>
               <div>
-                <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">
-                  Marca Competidor
+                <h3 className="text-xs font-bold text-white tracking-tight">
+                  Equivalencias y Cruces para {codigo}
+                </h3>
+                <p className="text-[11px] text-slate-400">
+                  {equivalencias.length} {equivalencias.length === 1 ? 'cruce registrado' : 'cruces registrados con marcas de la competencia'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* FORMULARIO RÁPIDO PARA AGREGAR CRUCE */}
+          <form onSubmit={handleAddEquivalencia} className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm space-y-3">
+            <div className="text-xs font-bold text-white flex items-center gap-1.5 pb-2 border-b border-slate-800">
+              <Plus className="w-3.5 h-3.5 text-blue-400" />
+              <span>Nuevo Cruce de Competencia</span>
+            </div>
+
+            {/* BOTONES RÁPIDOS DE MARCA */}
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">
+                Seleccionar Marca Competidora:
+              </label>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {POPULAR_COMPETITOR_BRANDS.map((brand) => {
+                  const isSelected = newMarcaComp.toUpperCase() === brand;
+                  return (
+                    <button
+                      key={brand}
+                      type="button"
+                      onClick={() => setNewMarcaComp(brand)}
+                      className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all border ${
+                        isSelected
+                          ? 'bg-blue-600 text-white border-blue-500 shadow-sm'
+                          : 'bg-slate-950 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
+                      }`}
+                    >
+                      {brand}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+              <div className="sm:col-span-4">
+                <label className="block text-[10px] font-bold text-slate-400 mb-1">
+                  Marca Competidor *
                 </label>
                 <input
                   type="text"
                   value={newMarcaComp}
                   onChange={(e) => setNewMarcaComp(e.target.value.toUpperCase())}
-                  placeholder="Ej: WEGA, FRAM, MANN, OEM"
-                  className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-blue-500 uppercase"
+                  placeholder="Ej: WEGA, FRAM, MANN"
+                  className="w-full p-2 bg-slate-950 border border-slate-800 rounded-lg text-xs font-bold text-white outline-none focus:border-blue-500 uppercase"
                   required
                 />
               </div>
 
-              <div>
-                <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">
-                  Código Competidor
+              <div className="sm:col-span-5">
+                <label className="block text-[10px] font-bold text-slate-400 mb-1">
+                  Código de la Competencia *
                 </label>
                 <input
                   type="text"
                   value={newCodComp}
                   onChange={(e) => setNewCodComp(e.target.value.toUpperCase())}
-                  placeholder="Ej: WO-420, C24005"
-                  className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-mono font-bold text-white outline-none focus:border-blue-500 uppercase"
+                  placeholder="Ej: WO-180, C24005, PH-10904"
+                  className="w-full p-2 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono font-bold text-white outline-none focus:border-blue-500 uppercase"
                   required
                 />
               </div>
 
-              <div className="flex items-end">
+              <div className="sm:col-span-3">
                 <button
                   type="submit"
                   disabled={addingEquiv}
-                  className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs rounded-2xl flex items-center justify-center gap-2 transition-all"
+                  className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-lg flex items-center justify-center gap-1.5 transition-all shadow-sm disabled:opacity-50"
                 >
-                  {addingEquiv ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                  <span>Agregar Equivalencia</span>
+                  {addingEquiv ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                  <span>+ Agregar Cruce</span>
                 </button>
               </div>
             </div>
           </form>
 
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+          {/* MATRIZ VISUAL DE CRUCES ACTIVOS */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <span className="text-xs font-bold text-white tracking-tight">Cruces Registrados:</span>
+              <span className="text-[11px] text-slate-400 font-mono">
+                {equivalencias.length} {equivalencias.length === 1 ? 'cruce' : 'cruces'}
+              </span>
+            </div>
+
             {equivalencias.length > 0 ? (
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="bg-slate-950/80 border-b border-slate-800 text-slate-400 font-black uppercase text-[10px]">
-                    <th className="p-4">Marca Competidor</th>
-                    <th className="p-4">Código Competidor</th>
-                    <th className="p-4 text-right">Acción</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60 font-semibold text-slate-300">
-                  {equivalencias.map((eq) => (
-                    <tr key={eq.id} className="hover:bg-slate-800/40">
-                      <td className="p-4 font-bold text-blue-400">{eq.marca_competidor}</td>
-                      <td className="p-4 font-mono font-black text-white">{eq.codigo_competidor}</td>
-                      <td className="p-4 text-right">
-                        <button
-                          onClick={() => handleDeleteEquivalencia(eq.id)}
-                          className="p-2 text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
-                          title="Eliminar equivalencia"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-1">
+                {equivalencias.map((eq) => {
+                  const badgeStyle = getCompetitorBadgeStyle(eq.marca_competidor);
+
+                  return (
+                    <div
+                      key={eq.id}
+                      className={`p-3 rounded-lg border flex items-center justify-between gap-2.5 transition-all group ${badgeStyle}`}
+                    >
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-bold uppercase tracking-wider opacity-75">
+                          {eq.marca_competidor}
+                        </div>
+                        <div className="font-mono font-extrabold text-sm text-white truncate mt-0.5">
+                          {eq.codigo_competidor}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteEquivalencia(eq.id)}
+                        className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors shrink-0"
+                        title={`Eliminar cruce con ${eq.marca_competidor} ${eq.codigo_competidor}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
-              <div className="p-12 text-center text-slate-400 text-xs font-semibold">
-                No hay equivalencias registradas para este producto.
+              <div className="p-8 text-center text-slate-400 space-y-1.5">
+                <ArrowLeftRight className="w-8 h-8 text-slate-600 mx-auto" />
+                <p className="text-xs font-medium">No hay equivalencias registradas para este producto todavía.</p>
+                <p className="text-[11px] text-slate-500">Completá el formulario de arriba para agregar las marcas correspondientes.</p>
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* TAB 4: VEHÍCULOS ASOCIADOS (SELECTOR DUAL: EXISTENTE vs NUEVO) */}
+      {/* TAB 4: VEHÍCULOS ASOCIADOS (BÚSQUEDA RÁPIDA + VISTA AGRUPADA POR MARCA Y MODELO) */}
       {activeTab === 'vehiculos' && (
-        <div className="space-y-6 animate-fade-in">
-          <form onSubmit={handleAddVehiculo} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-slate-800">
-              <h3 className="text-sm font-black text-white flex items-center gap-2">
-                <Plus className="w-4 h-4 text-blue-400" />
-                <span>Asociar Vehículo a {codigo}</span>
-              </h3>
-
-              {/* BOTONES MODO: EXISTENTE vs CUSTOM */}
-              <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-2xl border border-slate-800 text-[11px] font-bold">
-                <button
-                  type="button"
-                  onClick={() => setVehFormMode('existing')}
-                  className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${vehFormMode === 'existing'
-                      ? 'bg-blue-600 text-white shadow'
-                      : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                >
-                  <ListFilter className="w-3.5 h-3.5" />
-                  <span>Seleccionar de la Lista</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setVehFormMode('custom')}
-                  className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${vehFormMode === 'custom'
-                      ? 'bg-blue-600 text-white shadow'
-                      : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                >
-                  <PenTool className="w-3.5 h-3.5" />
-                  <span>Escribir Marca / Modelo Nuevo</span>
-                </button>
+        <div className="space-y-4 animate-fade-in">
+          {/* HEADER & CONTROLES DEL TAB */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900 border border-slate-800 p-3.5 rounded-xl">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                <Car className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-xs font-bold text-white tracking-tight">
+                  Vehículos Compatibles con {codigo}
+                </h3>
+                <p className="text-[11px] text-slate-400">
+                  {groupedProductVehicles.length} {groupedProductVehicles.length === 1 ? 'marca' : 'marcas'} · {vehiculos.length} {vehiculos.length === 1 ? 'aplicación registrada' : 'aplicaciones registradas'}
+                </p>
               </div>
             </div>
 
-            {/* MODO 1: SELECCIONAR EXISTENTE */}
-            {vehFormMode === 'existing' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                {/* DROPDOWN MARCA EXISTENTE */}
-                <div>
-                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">
-                    Marca del Catálogo *
-                  </label>
-                  <select
-                    value={newVehMarca}
-                    onChange={(e) => handleBrandDropdownChange(e.target.value)}
-                    className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-blue-500 cursor-pointer uppercase"
+            <button
+              type="button"
+              onClick={() => setShowManualVehForm((prev) => !prev)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all border ${
+                showManualVehForm
+                  ? 'bg-slate-800 text-white border-slate-700'
+                  : 'bg-blue-600 hover:bg-blue-500 text-white border-blue-500 shadow-sm'
+              }`}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>{showManualVehForm ? 'Cerrar Formulario Manual' : '+ Agregar Manual / Nuevo'}</span>
+            </button>
+          </div>
+
+          {/* BUSCADOR RÁPIDO AUTOCOMPLETABLE PARA ASOCIAR EN 1 CLIC */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 shadow-sm space-y-2">
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={vehQuickSearch}
+                onChange={(e) => setVehQuickSearch(e.target.value)}
+                placeholder="🔍 Vincular vehículo existente rápido (ej: Ford Territory, Hilux 2.8, Amarok, Gol Trend, Citan)..."
+                className="w-full pl-9 pr-8 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs font-medium text-white outline-none focus:border-blue-500 transition-colors placeholder:text-slate-500"
+              />
+              {isSearchingVeh && (
+                <Loader2 className="w-4 h-4 text-blue-400 animate-spin absolute right-3 top-1/2 -translate-y-1/2" />
+              )}
+              {vehQuickSearch && !isSearchingVeh && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVehQuickSearch('');
+                    setVehQuickResults([]);
+                  }}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 p-0.5"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* DROPDOWN DE RESULTADOS EN VIVO */}
+            {vehQuickResults.length > 0 && (
+              <div className="bg-slate-950 border border-slate-800 rounded-lg divide-y divide-slate-800/80 overflow-hidden shadow-xl max-h-64 overflow-y-auto">
+                <div className="p-2 bg-slate-900/80 text-[11px] font-bold text-slate-400 flex items-center justify-between">
+                  <span>Vehículos sugeridos para vincular:</span>
+                  <span className="text-[10px] text-blue-400 font-normal">Hacé clic en &quot;+ Vincular&quot;</span>
+                </div>
+                {vehQuickResults.map((res, idx) => (
+                  <div
+                    key={`${res.marca}-${res.modelo}-${res.version}-${idx}`}
+                    className="p-2.5 hover:bg-slate-800/40 flex items-center justify-between gap-3 text-xs"
                   >
-                    {masterBrands.map((b) => (
-                      <option key={b} value={b}>
-                        {b}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* DROPDOWN MODELO EXISTENTE (O CUSTOM) */}
-                <div>
-                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">
-                    Modelo de {newVehMarca || 'la marca'} *
-                  </label>
-                  {isCustomModelSelected ? (
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={customModelText}
-                        onChange={(e) => setCustomModelText(e.target.value)}
-                        placeholder="Escribí el nuevo modelo..."
-                        className="w-full p-3 pr-8 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-blue-500"
-                        autoFocus
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setIsCustomModelSelected(false)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
-                        title="Volver a la lista de modelos"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-white">{res.marca}</span>
+                        <span className="font-semibold text-blue-400">{res.modelo}</span>
+                      </div>
+                      <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
+                        <span>{res.version || 'Motor estándar'}</span>
+                        {res.año && <span className="font-mono text-slate-500">({res.año})</span>}
+                      </div>
                     </div>
-                  ) : (
-                    <select
-                      value={newVehModelo}
-                      onChange={(e) => handleModelDropdownChange(e.target.value)}
-                      className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-blue-500 cursor-pointer"
+
+                    <button
+                      type="button"
+                      onClick={() => handleQuickLinkVehicle(res)}
+                      className="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/30 text-xs font-semibold rounded-md transition-colors shrink-0 flex items-center gap-1"
                     >
-                      {(masterModelsMap[newVehMarca] || []).map((m) => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
-                      <option value="__CUSTOM_MODEL__">
-                        + Escribir otro modelo para {newVehMarca}...
-                      </option>
-                    </select>
-                  )}
-                </div>
-
-                {/* VERSIÓN */}
-                <div>
-                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">Versión / Motor</label>
-                  <input
-                    type="text"
-                    value={newVehVersion}
-                    onChange={(e) => setNewVehVersion(e.target.value)}
-                    placeholder="Ej: 2.8 TDi 204cv"
-                    className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-blue-500"
-                  />
-                </div>
-
-                {/* AÑO */}
-                <div>
-                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">Año / Rango</label>
-                  <input
-                    type="text"
-                    value={newVehAño}
-                    onChange={(e) => setNewVehAño(e.target.value)}
-                    placeholder="Ej: 2015 →"
-                    className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-blue-500"
-                  />
-                </div>
-              </div>
-            ) : (
-              /* MODO 2: ESCRIBIR CUSTOM */
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                <div>
-                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">Marca Nueva *</label>
-                  <input
-                    type="text"
-                    value={newVehMarca}
-                    onChange={(e) => setNewVehMarca(e.target.value.toUpperCase())}
-                    placeholder="Ej: TESLA, BYD, AUDI"
-                    className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-blue-500 uppercase"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">Modelo Nuevo *</label>
-                  <input
-                    type="text"
-                    value={newVehModelo}
-                    onChange={(e) => setNewVehModelo(e.target.value)}
-                    placeholder="Ej: Model 3, Dolphin, A4"
-                    className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-blue-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">Versión / Motor</label>
-                  <input
-                    type="text"
-                    value={newVehVersion}
-                    onChange={(e) => setNewVehVersion(e.target.value)}
-                    placeholder="Ej: Long Range / Dual Motor"
-                    className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">Año / Rango</label>
-                  <input
-                    type="text"
-                    value={newVehAño}
-                    onChange={(e) => setNewVehAño(e.target.value)}
-                    placeholder="Ej: 2022 →"
-                    className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-blue-500"
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="flex justify-end pt-2">
-              <button
-                type="submit"
-                disabled={addingVeh}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs rounded-2xl flex items-center gap-2 transition-all shadow-lg shadow-blue-600/20"
-              >
-                {addingVeh ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                <span>Asociar Vehículo</span>
-              </button>
-            </div>
-          </form>
-
-          {/* LISTA DE VEHÍCULOS */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
-            {vehiculos.length > 0 ? (
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="bg-slate-950/80 border-b border-slate-800 text-slate-400 font-black uppercase text-[10px]">
-                    <th className="p-4">Marca</th>
-                    <th className="p-4">Modelo</th>
-                    <th className="p-4">Versión</th>
-                    <th className="p-4">Año</th>
-                    <th className="p-4 text-right">Acción</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60 font-semibold text-slate-300">
-                  {vehiculos.map((v) => (
-                    <tr key={v.id} className="hover:bg-slate-800/40">
-                      <td className="p-4 font-bold text-white">{v.marca}</td>
-                      <td className="p-4 font-bold text-blue-400">{v.modelo}</td>
-                      <td className="p-4">{v.version || '-'}</td>
-                      <td className="p-4 font-mono text-slate-400">{v.año || '-'}</td>
-                      <td className="p-4 text-right">
-                        <button
-                          onClick={() => handleDeleteVehiculo(v.id)}
-                          className="p-2 text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
-                          title="Eliminar asociación"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div className="p-12 text-center text-slate-400 text-xs font-semibold">
-                No hay vehículos asociados a este producto.
+                      <Plus className="w-3 h-3" />
+                      <span>+ Vincular</span>
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
           </div>
+
+          {/* FORMULARIO MANUAL COMPACTO (OPCIONAL / COLAPSABLE) */}
+          {showManualVehForm && (
+            <form onSubmit={handleAddVehiculo} className="bg-slate-900 border border-blue-500/30 rounded-xl p-4 shadow-xl space-y-3 animate-fade-in">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <PenTool className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Asociación Manual de Vehículo</span>
+                </h4>
+
+                <div className="flex items-center gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800 text-[10px] font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setVehFormMode('existing')}
+                    className={`px-2 py-1 rounded transition-all ${
+                      vehFormMode === 'existing' ? 'bg-blue-600 text-white font-bold' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Marca del Catálogo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setVehFormMode('custom')}
+                    className={`px-2 py-1 rounded transition-all ${
+                      vehFormMode === 'custom' ? 'bg-blue-600 text-white font-bold' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Crear Nueva
+                  </button>
+                </div>
+              </div>
+
+              {vehFormMode === 'existing' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 text-xs">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1">Marca *</label>
+                    <select
+                      value={newVehMarca}
+                      onChange={(e) => handleBrandDropdownChange(e.target.value)}
+                      className="w-full p-2 bg-slate-950 border border-slate-800 rounded-md text-xs font-semibold text-white outline-none focus:border-blue-500 cursor-pointer uppercase"
+                    >
+                      {masterBrands.map((b) => (
+                        <option key={b} value={b}>{b}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1">Modelo de {newVehMarca} *</label>
+                    {isCustomModelSelected ? (
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={customModelText}
+                          onChange={(e) => setCustomModelText(e.target.value)}
+                          placeholder="Nuevo modelo..."
+                          className="w-full p-2 pr-7 bg-slate-950 border border-slate-800 rounded-md text-xs font-medium text-white outline-none focus:border-blue-500"
+                          autoFocus
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setIsCustomModelSelected(false)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <select
+                        value={newVehModelo}
+                        onChange={(e) => handleModelDropdownChange(e.target.value)}
+                        className="w-full p-2 bg-slate-950 border border-slate-800 rounded-md text-xs font-medium text-white outline-none focus:border-blue-500 cursor-pointer"
+                      >
+                        {(masterModelsMap[newVehMarca] || []).map((m) => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                        <option value="__CUSTOM_MODEL__">+ Escribir otro modelo...</option>
+                      </select>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1">Versión / Motor</label>
+                    <input
+                      type="text"
+                      value={newVehVersion}
+                      onChange={(e) => setNewVehVersion(e.target.value)}
+                      placeholder="Ej: 2.8 TDi 204cv"
+                      className="w-full p-2 bg-slate-950 border border-slate-800 rounded-md text-xs font-medium text-white outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1">Año / Rango</label>
+                    <input
+                      type="text"
+                      value={newVehAño}
+                      onChange={(e) => setNewVehAño(e.target.value)}
+                      placeholder="Ej: 2015 →"
+                      className="w-full p-2 bg-slate-950 border border-slate-800 rounded-md text-xs font-medium text-white outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 text-xs">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1">Marca Nueva *</label>
+                    <input
+                      type="text"
+                      value={newVehMarca}
+                      onChange={(e) => setNewVehMarca(e.target.value.toUpperCase())}
+                      placeholder="Ej: BYD"
+                      className="w-full p-2 bg-slate-950 border border-slate-800 rounded-md text-xs font-medium text-white outline-none focus:border-blue-500 uppercase"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1">Modelo Nuevo *</label>
+                    <input
+                      type="text"
+                      value={newVehModelo}
+                      onChange={(e) => setNewVehModelo(e.target.value)}
+                      placeholder="Ej: Dolphin"
+                      className="w-full p-2 bg-slate-950 border border-slate-800 rounded-md text-xs font-medium text-white outline-none focus:border-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1">Versión / Motor</label>
+                    <input
+                      type="text"
+                      value={newVehVersion}
+                      onChange={(e) => setNewVehVersion(e.target.value)}
+                      placeholder="Ej: 95cv EV"
+                      className="w-full p-2 bg-slate-950 border border-slate-800 rounded-md text-xs font-medium text-white outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1">Año / Rango</label>
+                    <input
+                      type="text"
+                      value={newVehAño}
+                      onChange={(e) => setNewVehAño(e.target.value)}
+                      placeholder="Ej: 2023 →"
+                      className="w-full p-2 bg-slate-950 border border-slate-800 rounded-md text-xs font-medium text-white outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end pt-1">
+                <button
+                  type="submit"
+                  disabled={addingVeh}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-lg flex items-center gap-1.5 transition-all shadow-sm"
+                >
+                  {addingVeh ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                  <span>Guardar Asociación</span>
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* LISTA DE VEHÍCULOS ASOCIADOS AGRUPADOS POR MARCA Y MODELO */}
+          {groupedProductVehicles.length > 0 ? (
+            <div className="space-y-3">
+              {groupedProductVehicles.map((brand) => (
+                <div key={brand.marca} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+                  {/* CABECERA DE MARCA */}
+                  <div className="p-3 bg-slate-950/80 border-b border-slate-800/80 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Car className="w-4 h-4 text-blue-400" />
+                      <span className="font-bold text-white text-xs tracking-tight">{brand.marca}</span>
+                      <span className="bg-blue-500/15 text-blue-300 text-[10px] font-mono font-bold px-2 py-0.2 rounded border border-blue-500/30">
+                        {brand.totalApps} {brand.totalApps === 1 ? 'aplicación' : 'aplicaciones'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* MODELOS DENTRO DE LA MARCA */}
+                  <div className="divide-y divide-slate-800/60">
+                    {brand.modelos.map((m) => (
+                      <div key={m.modelo} className="p-3">
+                        <div className="text-xs font-bold text-blue-400 mb-2 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                          <span>{m.modelo}</span>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left text-xs border-collapse">
+                            <thead>
+                              <tr className="text-slate-400 font-semibold uppercase text-[10px] border-b border-slate-800 pb-1">
+                                <th className="pb-1.5">Versión / Motorización</th>
+                                <th className="pb-1.5">Año / Rango</th>
+                                <th className="pb-1.5 text-right">Acción</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-800/50 text-slate-300">
+                              {m.items.map((v) => (
+                                <tr key={v.id} className="hover:bg-slate-800/30 transition-colors">
+                                  <td className="py-2 text-white font-medium">
+                                    {v.version || 'Todas las motorizaciones'}
+                                  </td>
+                                  <td className="py-2 font-mono text-slate-400">
+                                    {v.año || 'Todos los años'}
+                                  </td>
+                                  <td className="py-2 text-right">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteVehiculo(v.id)}
+                                      className="p-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
+                                      title="Desasociar vehículo de este producto"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-12 text-center text-slate-400 space-y-2">
+              <Car className="w-8 h-8 text-slate-600 mx-auto" />
+              <p className="text-xs font-medium">No hay vehículos asociados a este producto todavía.</p>
+              <p className="text-[11px] text-slate-500">Usá el buscador de arriba para vincular vehículos con 1 solo clic.</p>
+            </div>
+          )}
         </div>
       )}
 

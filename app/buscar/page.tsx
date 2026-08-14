@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Search, ChevronRight, Filter, ShieldCheck, Home } from 'lucide-react';
+import { ChevronRight, Home } from 'lucide-react';
 import SmartSearch from '../componentes/SmartSearch';
 import CatalogoProductos from '../componentes/CatalogoProductos';
 

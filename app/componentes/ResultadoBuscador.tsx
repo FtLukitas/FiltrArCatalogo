@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Search, Download, ArrowUp, Loader2, RotateCcw, Package, ChevronRight } from 'lucide-react';
+import { Search, ArrowUp, Loader2, RotateCcw, Package } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { Filtro } from '@/lib/types';
 import TarjetaProducto from './TarjetaProducto';
@@ -10,15 +10,9 @@ interface ResultadoBuscadorProps {
   initialSearch?: string;
 }
 
-const CATEGORIAS_LISTA = [
-  'Filtros de Aceite',
-  'Filtros de Aire',
-  'Filtros de Combustible',
-  'Filtros de Habitáculo',
-  'Filtros de Inyección',
-  'Kits de Filtros',
-  'Filtros Varios',
-];
+import { CATEGORIAS_UI } from '@/lib/constants';
+
+const CATEGORIAS_LISTA = CATEGORIAS_UI.filter(c => c !== 'TODOS');
 
 const MARCAS_LISTA = [
   'Todas',
@@ -39,16 +33,8 @@ export default function ResultadoBuscador({ initialSearch = '' }: ResultadoBusca
   const [marcaSeleccionada, setMarcaSeleccionada] = useState('Todas');
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  // Escuchar evento si viene desde SmartSearch de la portada
-  useEffect(() => {
-    const handleBuscar = (e: CustomEvent<string>) => {
-      if (typeof e.detail === 'string') {
-        setFiltroProducto(e.detail);
-      }
-    };
-    window.addEventListener('filtrar-buscar-catalogo' as any, handleBuscar as any);
-    return () => window.removeEventListener('filtrar-buscar-catalogo' as any, handleBuscar as any);
-  }, []);
+
+
 
   // Escuchar scroll para botón de ir arriba
   useEffect(() => {

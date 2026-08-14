@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabase';
-import { parsearEquivalenciasTexto, sanitizarVehiculo, normalizarMarcaCompetidor } from '@/lib/utils';
+import { sanitizarEquivalenciasTexto, sanitizarVehiculo, normalizarMarcaCompetidor } from '@/lib/utils';
 import AdminToast, { ToastMessage } from '../componentes/AdminToast';
 
 interface ParsedRow {
@@ -280,7 +280,7 @@ export default function AdminImportarPage() {
 
         chunk.forEach((r) => {
           if (r.equivalencias) {
-            const itemsEq = parsearEquivalenciasTexto(r.equivalencias);
+            const itemsEq = sanitizarEquivalenciasTexto(r.equivalencias);
             itemsEq.forEach((eq) => {
               equivalenciasBatch.push({
                 producto_codigo: r.codigo_filtrar,
@@ -300,9 +300,22 @@ export default function AdminImportarPage() {
         }
 
         if (equivalenciasBatch.length > 0) {
+          // Deduplicar dentro del lote para garantizar cumplimiento de uq_equivalencia_cruza
+          const uniqueEquivsMap = new Map<string, any>();
+          equivalenciasBatch.forEach((eq) => {
+            const key = `${eq.producto_codigo}__${eq.marca_competidor}__${eq.codigo_competidor}`;
+            if (!uniqueEquivsMap.has(key)) {
+              uniqueEquivsMap.set(key, eq);
+            }
+          });
+          const deduplicatedBatch = Array.from(uniqueEquivsMap.values());
+
           await supabase
             .from('equivalencias_cruza')
-            .insert(equivalenciasBatch);
+            .upsert(deduplicatedBatch, {
+              onConflict: 'producto_codigo,marca_competidor,codigo_competidor',
+              ignoreDuplicates: true,
+            });
         }
 
         // Mapear asociaciones vehiculares si están presentes en la fila
@@ -375,7 +388,7 @@ export default function AdminImportarPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/admin/productos"
-            className="p-2.5 bg-slate-900 border border-slate-800 rounded-2xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
+            className="p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
@@ -394,7 +407,7 @@ export default function AdminImportarPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleDescargarPlantilla('xlsx')}
-            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-white font-extrabold text-xs rounded-2xl flex items-center gap-2 transition-all shadow-sm active:scale-95"
+            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-white font-extrabold text-xs rounded-lg flex items-center gap-2 transition-all shadow-sm active:scale-95"
           >
             <Download className="w-4 h-4 text-emerald-400" />
             <span>Descargar Plantilla (.XLSX)</span>
@@ -402,7 +415,7 @@ export default function AdminImportarPage() {
 
           <button
             onClick={() => handleDescargarPlantilla('csv')}
-            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-white font-extrabold text-xs rounded-2xl flex items-center gap-2 transition-all shadow-sm active:scale-95"
+            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-white font-extrabold text-xs rounded-lg flex items-center gap-2 transition-all shadow-sm active:scale-95"
           >
             <Download className="w-4 h-4 text-blue-400" />
             <span>Plantilla (.CSV)</span>
@@ -412,8 +425,8 @@ export default function AdminImportarPage() {
 
       {/* RESULTADO PREVIO LOG */}
       {importLog && (
-        <div className="bg-emerald-950/40 border border-emerald-800/80 rounded-3xl p-5 text-emerald-200 flex items-center gap-4 animate-fade-in shadow-xl">
-          <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+        <div className="bg-emerald-950/40 border border-emerald-800/80 rounded-xl p-5 text-emerald-200 flex items-center gap-4 animate-fade-in shadow-xl">
+          <div className="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
             <CheckCircle2 className="w-6 h-6" />
           </div>
           <div>
@@ -424,11 +437,11 @@ export default function AdminImportarPage() {
       )}
 
       {/* TUTORIAL EXTENSO DE IMPORTACIÓN */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl transition-all">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl transition-all">
         {/* TUTORIAL HEADER */}
         <div className="p-6 bg-slate-950/80 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-400">
+            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400">
               <BookOpen className="w-6 h-6" />
             </div>
             <div>
@@ -511,9 +524,9 @@ export default function AdminImportarPage() {
             {activeTutorialTab === 'pasos' && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5 animate-fade-in">
                 {/* PASO 1 */}
-                <div className="bg-slate-950 p-6 rounded-3xl border border-slate-800 space-y-4 relative overflow-hidden group hover:border-emerald-500/50 transition-all">
+                <div className="bg-slate-950 p-6 rounded-xl border border-slate-800 space-y-4 relative overflow-hidden group hover:border-emerald-500/50 transition-all">
                   <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono font-black flex items-center justify-center text-base">
+                    <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono font-black flex items-center justify-center text-base">
                       1
                     </div>
                     <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
@@ -539,9 +552,9 @@ export default function AdminImportarPage() {
                 </div>
 
                 {/* PASO 2 */}
-                <div className="bg-slate-950 p-6 rounded-3xl border border-slate-800 space-y-4 relative overflow-hidden group hover:border-sky-500/50 transition-all">
+                <div className="bg-slate-950 p-6 rounded-xl border border-slate-800 space-y-4 relative overflow-hidden group hover:border-sky-500/50 transition-all">
                   <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 font-mono font-black flex items-center justify-center text-base">
+                    <div className="w-10 h-10 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-400 font-mono font-black flex items-center justify-center text-base">
                       2
                     </div>
                     <span className="text-[10px] font-black uppercase tracking-wider text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2.5 py-1 rounded-full">
@@ -561,9 +574,9 @@ export default function AdminImportarPage() {
                 </div>
 
                 {/* PASO 3 */}
-                <div className="bg-slate-950 p-6 rounded-3xl border border-slate-800 space-y-4 relative overflow-hidden group hover:border-purple-500/50 transition-all">
+                <div className="bg-slate-950 p-6 rounded-xl border border-slate-800 space-y-4 relative overflow-hidden group hover:border-purple-500/50 transition-all">
                   <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 font-mono font-black flex items-center justify-center text-base">
+                    <div className="w-10 h-10 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 font-mono font-black flex items-center justify-center text-base">
                       3
                     </div>
                     <span className="text-[10px] font-black uppercase tracking-wider text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2.5 py-1 rounded-full">
@@ -584,14 +597,14 @@ export default function AdminImportarPage() {
             {/* TAB 2: COLUMNAS ACEPTADAS */}
             {activeTutorialTab === 'columnas' && (
               <div className="space-y-4 animate-fade-in">
-                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex items-center gap-3 text-xs text-slate-300">
+                <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 flex items-center gap-3 text-xs text-slate-300">
                   <Info className="w-5 h-5 text-sky-400 shrink-0" />
                   <span>
                     El sistema es inteligente y reconoce variaciones en los nombres de las cabeceras (mayúsculas, minúsculas o inglés). A continuación se detallan las columnas compatibles:
                   </span>
                 </div>
 
-                <div className="border border-slate-800 rounded-2xl overflow-hidden bg-slate-950">
+                <div className="border border-slate-800 rounded-lg overflow-hidden bg-slate-950">
                   <div className="max-h-72 overflow-y-auto custom-scrollbar">
                     <table className="w-full text-left text-xs">
                       <thead className="bg-slate-900 text-slate-400 uppercase text-[10px] font-black tracking-wider sticky top-0 border-b border-slate-800">
@@ -680,7 +693,7 @@ export default function AdminImportarPage() {
             {activeTutorialTab === 'equivalencias' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
                 {/* EQUIVALENCIAS CARD */}
-                <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-4">
+                <div className="bg-slate-950 p-5 rounded-lg border border-slate-800 space-y-4">
                   <div className="flex items-center gap-2 text-sky-400 text-xs font-black uppercase tracking-wider">
                     <RefreshCw className="w-4 h-4" />
                     <span>Carga de Equivalencias Cruzadas</span>
@@ -715,7 +728,7 @@ export default function AdminImportarPage() {
                 </div>
 
                 {/* VEHÍCULOS CARD */}
-                <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-4">
+                <div className="bg-slate-950 p-5 rounded-lg border border-slate-800 space-y-4">
                   <div className="flex items-center gap-2 text-purple-400 text-xs font-black uppercase tracking-wider">
                     <Car className="w-4 h-4" />
                     <span>Asociación a Vehículos y Aplicaciones</span>
@@ -758,7 +771,7 @@ export default function AdminImportarPage() {
             {/* TAB 4: PREGUNTAS FRECUENTES (FAQ) */}
             {activeTutorialTab === 'faq' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
-                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-2">
                   <h4 className="text-xs font-black text-white flex items-center gap-2">
                     <HelpCircle className="w-4 h-4 text-emerald-400" />
                     <span>¿Qué sucede si un producto de la planilla ya existe en el sistema?</span>
@@ -768,7 +781,7 @@ export default function AdminImportarPage() {
                   </p>
                 </div>
 
-                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-2">
                   <h4 className="text-xs font-black text-white flex items-center gap-2">
                     <HelpCircle className="w-4 h-4 text-amber-400" />
                     <span>¿Qué pasa si la celda de precio está vacía?</span>
@@ -778,7 +791,7 @@ export default function AdminImportarPage() {
                   </p>
                 </div>
 
-                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-2">
                   <h4 className="text-xs font-black text-white flex items-center gap-2">
                     <HelpCircle className="w-4 h-4 text-purple-400" />
                     <span>¿Cómo se importan los Kits de Filtros?</span>
@@ -788,7 +801,7 @@ export default function AdminImportarPage() {
                   </p>
                 </div>
 
-                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-2">
                   <h4 className="text-xs font-black text-white flex items-center gap-2">
                     <HelpCircle className="w-4 h-4 text-sky-400" />
                     <span>¿Puedo subir archivos comprimidos o fotos en el Excel?</span>
@@ -805,10 +818,10 @@ export default function AdminImportarPage() {
 
 
       {/* ÁREA DE CARGA Y DROPAZONE */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 shadow-2xl space-y-6">
         <div
           onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-slate-700 hover:border-emerald-500/60 bg-slate-950/60 hover:bg-slate-950 rounded-3xl p-10 text-center cursor-pointer transition-all duration-300 group flex flex-col items-center justify-center space-y-3"
+          className="border-2 border-dashed border-slate-700 hover:border-emerald-500/60 bg-slate-950/60 hover:bg-slate-950 rounded-xl p-10 text-center cursor-pointer transition-all duration-300 group flex flex-col items-center justify-center space-y-3"
         >
           <input
             ref={fileInputRef}
@@ -818,7 +831,7 @@ export default function AdminImportarPage() {
             className="hidden"
           />
 
-          <div className="w-16 h-16 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+          <div className="w-16 h-16 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
             {readingFile ? <Loader2 className="w-8 h-8 animate-spin" /> : <Upload className="w-8 h-8" />}
           </div>
 
@@ -835,7 +848,7 @@ export default function AdminImportarPage() {
 
       {/* TABLA DE PREVISUALIZACIÓN DE FILAS DETECTADAS */}
       {parsedRows.length > 0 && (
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-6 animate-fade-in">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-2xl space-y-6 animate-fade-in">
           {/* RESUMEN DE FILAS */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
             <div>
@@ -860,7 +873,7 @@ export default function AdminImportarPage() {
 
           {/* PROGRESS BAR SI ESTÁ IMPORTANDO */}
           {importing && (
-            <div className="space-y-2 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+            <div className="space-y-2 bg-slate-950 p-4 rounded-lg border border-slate-800">
               <div className="flex items-center justify-between text-xs font-black text-white">
                 <span className="flex items-center gap-2">
                   <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
@@ -878,7 +891,7 @@ export default function AdminImportarPage() {
           )}
 
           {/* TABLA PREVIEW */}
-          <div className="overflow-x-auto max-h-96 overflow-y-auto border border-slate-800 rounded-2xl">
+          <div className="overflow-x-auto max-h-96 overflow-y-auto border border-slate-800 rounded-lg">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-950 text-[11px] font-black uppercase text-slate-400 border-b border-slate-800 sticky top-0 z-10">
@@ -951,7 +964,7 @@ export default function AdminImportarPage() {
                 setFileName(null);
               }}
               disabled={importing}
-              className="px-5 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-2xl transition-all disabled:opacity-50"
+              className="px-5 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-lg transition-all disabled:opacity-50"
             >
               Cancelar
             </button>
@@ -959,7 +972,7 @@ export default function AdminImportarPage() {
             <button
               onClick={handleEjecutarImportacion}
               disabled={importing}
-              className="px-8 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-2xl flex items-center gap-2 transition-all shadow-lg shadow-emerald-600/25 disabled:opacity-50"
+              className="px-8 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-lg flex items-center gap-2 transition-all shadow-lg shadow-emerald-600/25 disabled:opacity-50"
             >
               {importing ? (
                 <>

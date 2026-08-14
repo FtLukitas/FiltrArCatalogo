@@ -54,6 +54,24 @@ const ALIAS_MARCAS_COMPETIDOR: Record<string, string> = {
   'GENUINO': 'OEM',
   'FACTORY': 'OEM',
 
+  // MASTERFILT
+  'MASTERFILT': 'Masterfilt',
+  'MASTERFIL': 'Masterfilt',
+  'MASTERFILD': 'Masterfilt',
+  'MARTERFILT': 'Masterfilt',
+  'MASATERFILT': 'Masterfilt',
+
+  // TECNECO
+  'TECNECO': 'Tecneco',
+  'TECNECO FILTROS': 'Tecneco',
+
+  // FARO
+  'FARO': 'Faro',
+  'FAR0': 'Faro',
+
+  // EQUIV (equivalencias genéricas)
+  'EQUIV': 'Equiv',
+
   // OTROS FABRICANTES
   'MOPAR': 'Mopar',
   'BALDWIN': 'Baldwin',
@@ -63,6 +81,16 @@ const ALIAS_MARCAS_COMPETIDOR: Record<string, string> = {
   'SAKURA': 'Sakura',
   'LUBER-FINER': 'Luber-Finer',
   'BOSCH': 'Bosch',
+  'WIX': 'Wix',
+  'MOTORCRAFT': 'Motorcraft',
+  'EMAFI': 'Emafi',
+
+  // MARENO typos
+  'MARANO': 'Mareno',
+  'MARFENO': 'Mareno',
+
+  // FRAM typos
+  'FRAMM': 'Fram',
 };
 
 const ALIAS_MARCAS_VEHICULO: Record<string, string> = {

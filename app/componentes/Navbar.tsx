@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Search, Filter, ShieldCheck, MessageCircle, Menu, X } from 'lucide-react';
 
+import { WHATSAPP_NUMBER } from '@/lib/constants';
+
 export default function Navbar() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -65,7 +67,7 @@ export default function Navbar() {
           {/* BOTÓN WHATSAPP Y MENÚ HAMBURGUESA MOBILE */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <a
-              href="https://wa.me/5491132881901?text=Hola!%20Quisiera%20hacer%20una%20consulta%20sobre%20el%20cat%C3%A1logo%20FiltrAr"
+              href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hola!%20Quisiera%20hacer%20una%20consulta%20sobre%20el%20cat%C3%A1logo%20FiltrAr`}
               target="_blank"
               rel="noopener noreferrer"
               className="relative group bg-emerald-600 hover:bg-emerald-500 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-black text-[11px] sm:text-xs uppercase tracking-wider flex items-center gap-2 transition-all shadow-md shadow-emerald-600/20 active:scale-95 border border-emerald-400/30"

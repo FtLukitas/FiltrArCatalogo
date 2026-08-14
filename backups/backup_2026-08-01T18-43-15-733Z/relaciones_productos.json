@@ -1,0 +1,1502 @@
+[
+  {
+    "id": 1,
+    "producto_codigo": "KIT-01",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-010T"
+  },
+  {
+    "id": 2,
+    "producto_codigo": "KIT-01",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-711T"
+  },
+  {
+    "id": 3,
+    "producto_codigo": "KIT-01",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-010T"
+  },
+  {
+    "id": 4,
+    "producto_codigo": "KIT-01",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "CF-390T"
+  },
+  {
+    "id": 5,
+    "producto_codigo": "KIT-02",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-040T"
+  },
+  {
+    "id": 6,
+    "producto_codigo": "KIT-02",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-711T"
+  },
+  {
+    "id": 7,
+    "producto_codigo": "KIT-02",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-070T"
+  },
+  {
+    "id": 8,
+    "producto_codigo": "KIT-03",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-262C"
+  },
+  {
+    "id": 9,
+    "producto_codigo": "KIT-03",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-838C"
+  },
+  {
+    "id": 10,
+    "producto_codigo": "KIT-03",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-044C"
+  },
+  {
+    "id": 11,
+    "producto_codigo": "KIT-04",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-399F"
+  },
+  {
+    "id": 12,
+    "producto_codigo": "KIT-04",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-BB3F"
+  },
+  {
+    "id": 13,
+    "producto_codigo": "KIT-04",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-176F"
+  },
+  {
+    "id": 14,
+    "producto_codigo": "KIT-05",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-2H0V"
+  },
+  {
+    "id": 15,
+    "producto_codigo": "KIT-05",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-03LV"
+  },
+  {
+    "id": 16,
+    "producto_codigo": "KIT-05",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-012V"
+  },
+  {
+    "id": 17,
+    "producto_codigo": "KIT-05",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "CF-631V"
+  },
+  {
+    "id": 18,
+    "producto_codigo": "KIT-06",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-2H0V"
+  },
+  {
+    "id": 19,
+    "producto_codigo": "KIT-06",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-03LV"
+  },
+  {
+    "id": 20,
+    "producto_codigo": "KIT-06",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-127V"
+  },
+  {
+    "id": 21,
+    "producto_codigo": "KIT-06",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "CF-631V"
+  },
+  {
+    "id": 22,
+    "producto_codigo": "KIT-07",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-2H0V"
+  },
+  {
+    "id": 23,
+    "producto_codigo": "KIT-07",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-059V"
+  },
+  {
+    "id": 24,
+    "producto_codigo": "KIT-07",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-401V"
+  },
+  {
+    "id": 25,
+    "producto_codigo": "KIT-07",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "CF-631V"
+  },
+  {
+    "id": 26,
+    "producto_codigo": "KIT-08",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-74FI"
+  },
+  {
+    "id": 27,
+    "producto_codigo": "KIT-08",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-37FI"
+  },
+  {
+    "id": 28,
+    "producto_codigo": "KIT-08",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-77FI"
+  },
+  {
+    "id": 29,
+    "producto_codigo": "KIT-08",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "CF-97FI"
+  },
+  {
+    "id": 30,
+    "producto_codigo": "KIT-09",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-399F"
+  },
+  {
+    "id": 31,
+    "producto_codigo": "KIT-09",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-BB3F"
+  },
+  {
+    "id": 32,
+    "producto_codigo": "KIT-09",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-936F"
+  },
+  {
+    "id": 33,
+    "producto_codigo": "KIT-10",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-M1AN"
+  },
+  {
+    "id": 34,
+    "producto_codigo": "KIT-10",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-114R"
+  },
+  {
+    "id": 35,
+    "producto_codigo": "KIT-10",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-164R"
+  },
+  {
+    "id": 36,
+    "producto_codigo": "KIT-10",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "CF-272N"
+  },
+  {
+    "id": 37,
+    "producto_codigo": "KIT-11",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-M1AN"
+  },
+  {
+    "id": 38,
+    "producto_codigo": "KIT-11",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-114R"
+  },
+  {
+    "id": 39,
+    "producto_codigo": "KIT-11",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-560R/S"
+  },
+  {
+    "id": 40,
+    "producto_codigo": "KIT-11",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "CF-272N"
+  },
+  {
+    "id": 41,
+    "producto_codigo": "KIT-12",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-0Y0T"
+  },
+  {
+    "id": 42,
+    "producto_codigo": "KIT-12",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-602T"
+  },
+  {
+    "id": 43,
+    "producto_codigo": "KIT-13",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-Y04T"
+  },
+  {
+    "id": 44,
+    "producto_codigo": "KIT-13",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-683T"
+  },
+  {
+    "id": 45,
+    "producto_codigo": "KIT-14",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-050T"
+  },
+  {
+    "id": 46,
+    "producto_codigo": "KIT-14",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-041T"
+  },
+  {
+    "id": 47,
+    "producto_codigo": "KIT-15",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-620V"
+  },
+  {
+    "id": 48,
+    "producto_codigo": "KIT-15",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-61HV"
+  },
+  {
+    "id": 49,
+    "producto_codigo": "KIT-16",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-76FI"
+  },
+  {
+    "id": 50,
+    "producto_codigo": "KIT-16",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-87FI"
+  },
+  {
+    "id": 51,
+    "producto_codigo": "KIT-16",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-058C"
+  },
+  {
+    "id": 52,
+    "producto_codigo": "KIT-17",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-000H"
+  },
+  {
+    "id": 53,
+    "producto_codigo": "KIT-17",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-154H"
+  },
+  {
+    "id": 54,
+    "producto_codigo": "KIT-18",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-BH0H"
+  },
+  {
+    "id": 55,
+    "producto_codigo": "KIT-18",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-154H"
+  },
+  {
+    "id": 56,
+    "producto_codigo": "KIT-19",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-348R"
+  },
+  {
+    "id": 57,
+    "producto_codigo": "KIT-19",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-114R"
+  },
+  {
+    "id": 58,
+    "producto_codigo": "KIT-19",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-164R"
+  },
+  {
+    "id": 59,
+    "producto_codigo": "EFPA588",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA588PMD"
+  },
+  {
+    "id": 60,
+    "producto_codigo": "EFPA602/8",
+    "tipo_relacion": "ES_IGUAL_A",
+    "codigo_relacionado": "EFPA602"
+  },
+  {
+    "id": 61,
+    "producto_codigo": "EFPA603/8",
+    "tipo_relacion": "ES_IGUAL_A",
+    "codigo_relacionado": "L"
+  },
+  {
+    "id": 62,
+    "producto_codigo": "EFPA606",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA605"
+  },
+  {
+    "id": 63,
+    "producto_codigo": "EFPA607",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA544"
+  },
+  {
+    "id": 64,
+    "producto_codigo": "EFPA653/T",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA628"
+  },
+  {
+    "id": 65,
+    "producto_codigo": "EFPA653",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA628"
+  },
+  {
+    "id": 66,
+    "producto_codigo": "EFPA655",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA595"
+  },
+  {
+    "id": 67,
+    "producto_codigo": "EFPA660",
+    "tipo_relacion": "ES_IGUAL_A",
+    "codigo_relacionado": "L"
+  },
+  {
+    "id": 68,
+    "producto_codigo": "EFPA674",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA673"
+  },
+  {
+    "id": 69,
+    "producto_codigo": "EFPA678",
+    "tipo_relacion": "ES_IGUAL_A",
+    "codigo_relacionado": "L"
+  },
+  {
+    "id": 70,
+    "producto_codigo": "EFPA679",
+    "tipo_relacion": "ES_IGUAL_A",
+    "codigo_relacionado": "L"
+  },
+  {
+    "id": 71,
+    "producto_codigo": "EFPA686",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA547"
+  },
+  {
+    "id": 72,
+    "producto_codigo": "EFPA703",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA695"
+  },
+  {
+    "id": 73,
+    "producto_codigo": "EFPA782/S",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA782"
+  },
+  {
+    "id": 74,
+    "producto_codigo": "EFPA790",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA789"
+  },
+  {
+    "id": 75,
+    "producto_codigo": "EFPA795",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA"
+  },
+  {
+    "id": 76,
+    "producto_codigo": "EFPA797",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA796."
+  },
+  {
+    "id": 77,
+    "producto_codigo": "EFPA825",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA824"
+  },
+  {
+    "id": 78,
+    "producto_codigo": "EFPA856",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA855"
+  },
+  {
+    "id": 79,
+    "producto_codigo": "EFPA863/S",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA863"
+  },
+  {
+    "id": 80,
+    "producto_codigo": "EFPA885/S",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA885"
+  },
+  {
+    "id": 81,
+    "producto_codigo": "EFPA889/S",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA"
+  },
+  {
+    "id": 82,
+    "producto_codigo": "EA239",
+    "tipo_relacion": "ES_IGUAL_A",
+    "codigo_relacionado": "L"
+  },
+  {
+    "id": 83,
+    "producto_codigo": "EAH341",
+    "tipo_relacion": "ES_IGUAL_A",
+    "codigo_relacionado": "EAH308"
+  },
+  {
+    "id": 2393,
+    "producto_codigo": "KIT-01",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-010T"
+  },
+  {
+    "id": 2394,
+    "producto_codigo": "KIT-01",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-711T"
+  },
+  {
+    "id": 2395,
+    "producto_codigo": "KIT-01",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-010T"
+  },
+  {
+    "id": 2396,
+    "producto_codigo": "KIT-01",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "CF-390T"
+  },
+  {
+    "id": 2397,
+    "producto_codigo": "KIT-02",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-040T"
+  },
+  {
+    "id": 2398,
+    "producto_codigo": "KIT-02",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-711T"
+  },
+  {
+    "id": 2399,
+    "producto_codigo": "KIT-02",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-070T"
+  },
+  {
+    "id": 2400,
+    "producto_codigo": "KIT-03",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-262C"
+  },
+  {
+    "id": 2401,
+    "producto_codigo": "KIT-03",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-838C"
+  },
+  {
+    "id": 2402,
+    "producto_codigo": "KIT-03",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-044C"
+  },
+  {
+    "id": 2403,
+    "producto_codigo": "KIT-04",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-399F"
+  },
+  {
+    "id": 2404,
+    "producto_codigo": "KIT-04",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-BB3F"
+  },
+  {
+    "id": 2405,
+    "producto_codigo": "KIT-04",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-176F"
+  },
+  {
+    "id": 2406,
+    "producto_codigo": "KIT-05",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-2H0V"
+  },
+  {
+    "id": 2407,
+    "producto_codigo": "KIT-05",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-03LV"
+  },
+  {
+    "id": 2408,
+    "producto_codigo": "KIT-05",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-012V"
+  },
+  {
+    "id": 2409,
+    "producto_codigo": "KIT-05",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "CF-631V"
+  },
+  {
+    "id": 2410,
+    "producto_codigo": "KIT-06",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-2H0V"
+  },
+  {
+    "id": 2411,
+    "producto_codigo": "KIT-06",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-03LV"
+  },
+  {
+    "id": 2412,
+    "producto_codigo": "KIT-06",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-127V"
+  },
+  {
+    "id": 2413,
+    "producto_codigo": "KIT-06",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "CF-631V"
+  },
+  {
+    "id": 2414,
+    "producto_codigo": "KIT-07",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-2H0V"
+  },
+  {
+    "id": 2415,
+    "producto_codigo": "KIT-07",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-059V"
+  },
+  {
+    "id": 2416,
+    "producto_codigo": "KIT-07",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-401V"
+  },
+  {
+    "id": 2417,
+    "producto_codigo": "KIT-07",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "CF-631V"
+  },
+  {
+    "id": 2418,
+    "producto_codigo": "KIT-08",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-74FI"
+  },
+  {
+    "id": 2419,
+    "producto_codigo": "KIT-08",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-37FI"
+  },
+  {
+    "id": 2420,
+    "producto_codigo": "KIT-08",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-77FI"
+  },
+  {
+    "id": 2421,
+    "producto_codigo": "KIT-08",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "CF-97FI"
+  },
+  {
+    "id": 2422,
+    "producto_codigo": "KIT-09",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-399F"
+  },
+  {
+    "id": 2423,
+    "producto_codigo": "KIT-09",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-BB3F"
+  },
+  {
+    "id": 2424,
+    "producto_codigo": "KIT-09",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-936F"
+  },
+  {
+    "id": 2425,
+    "producto_codigo": "KIT-10",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-M1AN"
+  },
+  {
+    "id": 2426,
+    "producto_codigo": "KIT-10",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-114R"
+  },
+  {
+    "id": 2427,
+    "producto_codigo": "KIT-10",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-164R"
+  },
+  {
+    "id": 2428,
+    "producto_codigo": "KIT-10",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "CF-272N"
+  },
+  {
+    "id": 2429,
+    "producto_codigo": "KIT-11",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-M1AN"
+  },
+  {
+    "id": 2430,
+    "producto_codigo": "KIT-11",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-114R"
+  },
+  {
+    "id": 2431,
+    "producto_codigo": "KIT-11",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-560R/S"
+  },
+  {
+    "id": 2432,
+    "producto_codigo": "KIT-11",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "CF-272N"
+  },
+  {
+    "id": 2433,
+    "producto_codigo": "KIT-12",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-0Y0T"
+  },
+  {
+    "id": 2434,
+    "producto_codigo": "KIT-12",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-602T"
+  },
+  {
+    "id": 2435,
+    "producto_codigo": "KIT-13",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-Y04T"
+  },
+  {
+    "id": 2436,
+    "producto_codigo": "KIT-13",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-683T"
+  },
+  {
+    "id": 2437,
+    "producto_codigo": "KIT-14",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-050T"
+  },
+  {
+    "id": 2438,
+    "producto_codigo": "KIT-14",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-041T"
+  },
+  {
+    "id": 2439,
+    "producto_codigo": "KIT-15",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-620V"
+  },
+  {
+    "id": 2440,
+    "producto_codigo": "KIT-15",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-61HV"
+  },
+  {
+    "id": 2441,
+    "producto_codigo": "KIT-16",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-76FI"
+  },
+  {
+    "id": 2442,
+    "producto_codigo": "KIT-16",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-87FI"
+  },
+  {
+    "id": 2443,
+    "producto_codigo": "KIT-16",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-058C"
+  },
+  {
+    "id": 2444,
+    "producto_codigo": "KIT-17",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-000H"
+  },
+  {
+    "id": 2445,
+    "producto_codigo": "KIT-17",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-154H"
+  },
+  {
+    "id": 2446,
+    "producto_codigo": "KIT-18",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-BH0H"
+  },
+  {
+    "id": 2447,
+    "producto_codigo": "KIT-18",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-154H"
+  },
+  {
+    "id": 2448,
+    "producto_codigo": "KIT-19",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-348R"
+  },
+  {
+    "id": 2449,
+    "producto_codigo": "KIT-19",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-114R"
+  },
+  {
+    "id": 2450,
+    "producto_codigo": "KIT-19",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-164R"
+  },
+  {
+    "id": 2451,
+    "producto_codigo": "EFPA588",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA588PMD"
+  },
+  {
+    "id": 2452,
+    "producto_codigo": "EFPA602/8",
+    "tipo_relacion": "ES_IGUAL_A",
+    "codigo_relacionado": "EFPA602"
+  },
+  {
+    "id": 2453,
+    "producto_codigo": "EFPA603/8",
+    "tipo_relacion": "ES_IGUAL_A",
+    "codigo_relacionado": "L"
+  },
+  {
+    "id": 2454,
+    "producto_codigo": "EFPA606",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA605"
+  },
+  {
+    "id": 2455,
+    "producto_codigo": "EFPA607",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA544"
+  },
+  {
+    "id": 2456,
+    "producto_codigo": "EFPA653/T",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA628"
+  },
+  {
+    "id": 2457,
+    "producto_codigo": "EFPA653",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA628"
+  },
+  {
+    "id": 2458,
+    "producto_codigo": "EFPA655",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA595"
+  },
+  {
+    "id": 2459,
+    "producto_codigo": "EFPA660",
+    "tipo_relacion": "ES_IGUAL_A",
+    "codigo_relacionado": "L"
+  },
+  {
+    "id": 2460,
+    "producto_codigo": "EFPA674",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA673"
+  },
+  {
+    "id": 2461,
+    "producto_codigo": "EFPA678",
+    "tipo_relacion": "ES_IGUAL_A",
+    "codigo_relacionado": "L"
+  },
+  {
+    "id": 2462,
+    "producto_codigo": "EFPA679",
+    "tipo_relacion": "ES_IGUAL_A",
+    "codigo_relacionado": "L"
+  },
+  {
+    "id": 2463,
+    "producto_codigo": "EFPA686",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA547"
+  },
+  {
+    "id": 2464,
+    "producto_codigo": "EFPA703",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA695"
+  },
+  {
+    "id": 2465,
+    "producto_codigo": "EFPA782/S",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA782"
+  },
+  {
+    "id": 2466,
+    "producto_codigo": "EFPA790",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA789"
+  },
+  {
+    "id": 2467,
+    "producto_codigo": "EFPA795",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA"
+  },
+  {
+    "id": 2468,
+    "producto_codigo": "EFPA797",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA796."
+  },
+  {
+    "id": 2469,
+    "producto_codigo": "EFPA825",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA824"
+  },
+  {
+    "id": 2470,
+    "producto_codigo": "EFPA856",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA855"
+  },
+  {
+    "id": 2471,
+    "producto_codigo": "EFPA863/S",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA863"
+  },
+  {
+    "id": 2472,
+    "producto_codigo": "EFPA885/S",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA885"
+  },
+  {
+    "id": 2473,
+    "producto_codigo": "EFPA889/S",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA"
+  },
+  {
+    "id": 2474,
+    "producto_codigo": "EA239",
+    "tipo_relacion": "ES_IGUAL_A",
+    "codigo_relacionado": "L"
+  },
+  {
+    "id": 2475,
+    "producto_codigo": "EAH341",
+    "tipo_relacion": "ES_IGUAL_A",
+    "codigo_relacionado": "EAH308"
+  },
+  {
+    "id": 2476,
+    "producto_codigo": "KIT-01",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-010T"
+  },
+  {
+    "id": 2477,
+    "producto_codigo": "KIT-01",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-711T"
+  },
+  {
+    "id": 2478,
+    "producto_codigo": "KIT-01",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-010T"
+  },
+  {
+    "id": 2479,
+    "producto_codigo": "KIT-01",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "CF-390T"
+  },
+  {
+    "id": 2480,
+    "producto_codigo": "KIT-02",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-040T"
+  },
+  {
+    "id": 2481,
+    "producto_codigo": "KIT-02",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-711T"
+  },
+  {
+    "id": 2482,
+    "producto_codigo": "KIT-02",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-070T"
+  },
+  {
+    "id": 2483,
+    "producto_codigo": "KIT-03",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-262C"
+  },
+  {
+    "id": 2484,
+    "producto_codigo": "KIT-03",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-838C"
+  },
+  {
+    "id": 2485,
+    "producto_codigo": "KIT-03",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-044C"
+  },
+  {
+    "id": 2486,
+    "producto_codigo": "KIT-04",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-399F"
+  },
+  {
+    "id": 2487,
+    "producto_codigo": "KIT-04",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-BB3F"
+  },
+  {
+    "id": 2488,
+    "producto_codigo": "KIT-04",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-176F"
+  },
+  {
+    "id": 2489,
+    "producto_codigo": "KIT-05",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-2H0V"
+  },
+  {
+    "id": 2490,
+    "producto_codigo": "KIT-05",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-03LV"
+  },
+  {
+    "id": 2491,
+    "producto_codigo": "KIT-05",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-012V"
+  },
+  {
+    "id": 2492,
+    "producto_codigo": "KIT-05",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "CF-631V"
+  },
+  {
+    "id": 2493,
+    "producto_codigo": "KIT-06",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-2H0V"
+  },
+  {
+    "id": 2494,
+    "producto_codigo": "KIT-06",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-03LV"
+  },
+  {
+    "id": 2495,
+    "producto_codigo": "KIT-06",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-127V"
+  },
+  {
+    "id": 2496,
+    "producto_codigo": "KIT-06",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "CF-631V"
+  },
+  {
+    "id": 2497,
+    "producto_codigo": "KIT-07",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-2H0V"
+  },
+  {
+    "id": 2498,
+    "producto_codigo": "KIT-07",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-059V"
+  },
+  {
+    "id": 2499,
+    "producto_codigo": "KIT-07",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-401V"
+  },
+  {
+    "id": 2500,
+    "producto_codigo": "KIT-07",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "CF-631V"
+  },
+  {
+    "id": 2501,
+    "producto_codigo": "KIT-08",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-74FI"
+  },
+  {
+    "id": 2502,
+    "producto_codigo": "KIT-08",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-37FI"
+  },
+  {
+    "id": 2503,
+    "producto_codigo": "KIT-08",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-77FI"
+  },
+  {
+    "id": 2504,
+    "producto_codigo": "KIT-08",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "CF-97FI"
+  },
+  {
+    "id": 2505,
+    "producto_codigo": "KIT-09",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-399F"
+  },
+  {
+    "id": 2506,
+    "producto_codigo": "KIT-09",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-BB3F"
+  },
+  {
+    "id": 2507,
+    "producto_codigo": "KIT-09",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-936F"
+  },
+  {
+    "id": 2508,
+    "producto_codigo": "KIT-10",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-M1AN"
+  },
+  {
+    "id": 2509,
+    "producto_codigo": "KIT-10",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-114R"
+  },
+  {
+    "id": 2510,
+    "producto_codigo": "KIT-10",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-164R"
+  },
+  {
+    "id": 2511,
+    "producto_codigo": "KIT-10",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "CF-272N"
+  },
+  {
+    "id": 2512,
+    "producto_codigo": "KIT-11",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-M1AN"
+  },
+  {
+    "id": 2513,
+    "producto_codigo": "KIT-11",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-114R"
+  },
+  {
+    "id": 2514,
+    "producto_codigo": "KIT-11",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-560R/S"
+  },
+  {
+    "id": 2515,
+    "producto_codigo": "KIT-11",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "CF-272N"
+  },
+  {
+    "id": 2516,
+    "producto_codigo": "KIT-12",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-0Y0T"
+  },
+  {
+    "id": 2517,
+    "producto_codigo": "KIT-12",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-602T"
+  },
+  {
+    "id": 2518,
+    "producto_codigo": "KIT-13",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-Y04T"
+  },
+  {
+    "id": 2519,
+    "producto_codigo": "KIT-13",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-683T"
+  },
+  {
+    "id": 2520,
+    "producto_codigo": "KIT-14",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-050T"
+  },
+  {
+    "id": 2521,
+    "producto_codigo": "KIT-14",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-041T"
+  },
+  {
+    "id": 2522,
+    "producto_codigo": "KIT-15",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-620V"
+  },
+  {
+    "id": 2523,
+    "producto_codigo": "KIT-15",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-61HV"
+  },
+  {
+    "id": 2524,
+    "producto_codigo": "KIT-16",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-76FI"
+  },
+  {
+    "id": 2525,
+    "producto_codigo": "KIT-16",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-87FI"
+  },
+  {
+    "id": 2526,
+    "producto_codigo": "KIT-16",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-058C"
+  },
+  {
+    "id": 2527,
+    "producto_codigo": "KIT-17",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-000H"
+  },
+  {
+    "id": 2528,
+    "producto_codigo": "KIT-17",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-154H"
+  },
+  {
+    "id": 2529,
+    "producto_codigo": "KIT-18",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-BH0H"
+  },
+  {
+    "id": 2530,
+    "producto_codigo": "KIT-18",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-154H"
+  },
+  {
+    "id": 2531,
+    "producto_codigo": "KIT-19",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "AF-348R"
+  },
+  {
+    "id": 2532,
+    "producto_codigo": "KIT-19",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "OF-114R"
+  },
+  {
+    "id": 2533,
+    "producto_codigo": "KIT-19",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "FF-164R"
+  },
+  {
+    "id": 2534,
+    "producto_codigo": "EFPA588",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA588PMD"
+  },
+  {
+    "id": 2535,
+    "producto_codigo": "EFPA602/8",
+    "tipo_relacion": "ES_IGUAL_A",
+    "codigo_relacionado": "EFPA602"
+  },
+  {
+    "id": 2536,
+    "producto_codigo": "EFPA603/8",
+    "tipo_relacion": "ES_IGUAL_A",
+    "codigo_relacionado": "L"
+  },
+  {
+    "id": 2537,
+    "producto_codigo": "EFPA606",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA605"
+  },
+  {
+    "id": 2538,
+    "producto_codigo": "EFPA607",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA544"
+  },
+  {
+    "id": 2539,
+    "producto_codigo": "EFPA653/T",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA628"
+  },
+  {
+    "id": 2540,
+    "producto_codigo": "EFPA653",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA628"
+  },
+  {
+    "id": 2541,
+    "producto_codigo": "EFPA655",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA595"
+  },
+  {
+    "id": 2542,
+    "producto_codigo": "EFPA660",
+    "tipo_relacion": "ES_IGUAL_A",
+    "codigo_relacionado": "L"
+  },
+  {
+    "id": 2543,
+    "producto_codigo": "EFPA674",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA673"
+  },
+  {
+    "id": 2544,
+    "producto_codigo": "EFPA678",
+    "tipo_relacion": "ES_IGUAL_A",
+    "codigo_relacionado": "L"
+  },
+  {
+    "id": 2545,
+    "producto_codigo": "EFPA679",
+    "tipo_relacion": "ES_IGUAL_A",
+    "codigo_relacionado": "L"
+  },
+  {
+    "id": 2546,
+    "producto_codigo": "EFPA686",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA547"
+  },
+  {
+    "id": 2547,
+    "producto_codigo": "EFPA703",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA695"
+  },
+  {
+    "id": 2548,
+    "producto_codigo": "EFPA782/S",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA782"
+  },
+  {
+    "id": 2549,
+    "producto_codigo": "EFPA790",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA789"
+  },
+  {
+    "id": 2550,
+    "producto_codigo": "EFPA795",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA"
+  },
+  {
+    "id": 2551,
+    "producto_codigo": "EFPA797",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA796."
+  },
+  {
+    "id": 2552,
+    "producto_codigo": "EFPA825",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA824"
+  },
+  {
+    "id": 2553,
+    "producto_codigo": "EFPA856",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA855"
+  },
+  {
+    "id": 2554,
+    "producto_codigo": "EFPA863/S",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA863"
+  },
+  {
+    "id": 2555,
+    "producto_codigo": "EFPA885/S",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA885"
+  },
+  {
+    "id": 2556,
+    "producto_codigo": "EFPA889/S",
+    "tipo_relacion": "SECUNDARIO_DE",
+    "codigo_relacionado": "EFPA"
+  },
+  {
+    "id": 2557,
+    "producto_codigo": "EA239",
+    "tipo_relacion": "ES_IGUAL_A",
+    "codigo_relacionado": "L"
+  },
+  {
+    "id": 2558,
+    "producto_codigo": "EAH341",
+    "tipo_relacion": "ES_IGUAL_A",
+    "codigo_relacionado": "EAH308"
+  },
+  {
+    "id": 2559,
+    "producto_codigo": "TEST004",
+    "tipo_relacion": "CONTIENE_COMPONENTE",
+    "codigo_relacionado": "ROBLE"
+  }
+]

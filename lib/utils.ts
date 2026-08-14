@@ -21,11 +21,6 @@ export {
   sanitizarVehiculo,
 } from './normalization';
 
-// Parsear texto libre de equivalencias usando el motor de canonización anti-tipeo
-export const parsearEquivalenciasTexto = (texto: string | null | undefined): EquivalenciaItem[] => {
-  return sanitizarEquivalenciasTexto(texto);
-};
-
 // Parsear dimensiones flexibles de cualquier formato (Largo: X, DE: X | DI: Y, 240x180x45, PICO 6MM, etc.)
 export const parsearDimensiones = (texto: string | null | undefined): MedidaItem[] => {
   if (!texto || !texto.trim()) return [];
@@ -120,11 +115,6 @@ export const normalizarImagenes = (imagenes: string | string[] | null | undefine
   return [];
 };
 
-// Normalizar búsqueda sin guiones ni espacios
-export const normalizarBusqueda = (texto: string): string => {
-  return texto.replace(/[- ]/g, '').toLowerCase();
-};
-
 // Formato de moneda ARS (soporta ocultamiento explícito)
 export const formatearPrecio = (precio: number | null | undefined, ocultar?: boolean): string => {
   if (ocultar) {
@@ -140,9 +130,11 @@ export const formatearPrecio = (precio: number | null | undefined, ocultar?: boo
   }).format(precio);
 };
 
+import { WHATSAPP_NUMBER } from './constants';
+
 // Crear URL de WhatsApp para consulta de producto
 export const generarUrlWhatsapp = (codigoFiltrar: string, titulo?: string | null): string => {
-  const numero = '5491132881901';
+  const numero = WHATSAPP_NUMBER;
   let textoProducto = codigoFiltrar;
   if (titulo && titulo.trim() && !titulo.toLowerCase().includes(codigoFiltrar.toLowerCase())) {
     textoProducto = `${codigoFiltrar} (${titulo.trim()})`;

@@ -24,17 +24,84 @@ import {
   Eye,
   EyeOff,
   FileSpreadsheet,
+  RotateCcw,
+  SlidersHorizontal,
+  ArrowUpDown,
+  Check,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { Filtro } from '@/lib/types';
 import { formatearPrecio, normalizarImagenes } from '@/lib/utils';
 import { getOcultarPreciosGlobal, setOcultarPreciosGlobal, debeOcultarPrecio } from '@/lib/preciosConfig';
+import { CATEGORIAS_FILTRO } from '@/lib/constants';
 import ConfirmModal from '../componentes/ConfirmModal';
 import AdminToast, { ToastMessage } from '../componentes/AdminToast';
 
-const CATEGORIAS = ['Todas', 'Aceite', 'Aire', 'Combustible', 'Habitáculo', 'Inyección', 'Kits'];
-const MARCAS = ['Todas', 'Pro Filter', 'Maxfil', 'MDH', 'Picborg'];
 const PAGE_SIZE = 25;
+
+// Tabs de categorías con nombres cortos y legibles
+const TABS_CATEGORIAS = [
+  { key: 'TODOS', label: 'Todos' },
+  { key: 'Filtros de Aceite', label: 'Aceite' },
+  { key: 'Filtros de Aire', label: 'Aire' },
+  { key: 'Filtros de Combustible', label: 'Combustible' },
+  { key: 'Filtros de Habitáculo', label: 'Habitáculo' },
+  { key: 'Filtros de Inyección', label: 'Inyección' },
+  { key: 'Kits de Filtros', label: 'Kits' },
+  { key: 'Filtros Varios', label: 'Varios' },
+];
+
+// Helper visual para badges de categoría con colores semánticos
+function getCategoriaBadge(catRaw: string | null) {
+  const cat = (catRaw || '').toLowerCase();
+  if (cat.includes('aceite')) {
+    return {
+      label: 'Aceite',
+      badgeClass: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
+      dotClass: 'bg-amber-400',
+    };
+  }
+  if (cat.includes('aire')) {
+    return {
+      label: 'Aire',
+      badgeClass: 'bg-sky-500/10 text-sky-300 border-sky-500/20',
+      dotClass: 'bg-sky-400',
+    };
+  }
+  if (cat.includes('combustible')) {
+    return {
+      label: 'Combustible',
+      badgeClass: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
+      dotClass: 'bg-emerald-400',
+    };
+  }
+  if (cat.includes('habitaculo') || cat.includes('habitáculo')) {
+    return {
+      label: 'Habitáculo',
+      badgeClass: 'bg-purple-500/10 text-purple-300 border-purple-500/20',
+      dotClass: 'bg-purple-400',
+    };
+  }
+  if (cat.includes('inyeccion') || cat.includes('inyección')) {
+    return {
+      label: 'Inyección',
+      badgeClass: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20',
+      dotClass: 'bg-cyan-400',
+    };
+  }
+  if (cat.includes('kit')) {
+    return {
+      label: 'Kit',
+      badgeClass: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20',
+      dotClass: 'bg-indigo-400',
+    };
+  }
+  return {
+    label: catRaw || 'Varios',
+    badgeClass: 'bg-slate-800 text-slate-300 border-slate-700',
+    dotClass: 'bg-slate-400',
+  };
+}
 
 export default function AdminProductosPage() {
   const [productos, setProductos] = useState<Filtro[]>([]);
@@ -42,7 +109,7 @@ export default function AdminProductosPage() {
 
   // Search & Filter state
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategoria, setSelectedCategoria] = useState('Todas');
+  const [selectedCategoria, setSelectedCategoria] = useState('TODOS');
   const [selectedMarca, setSelectedMarca] = useState('Todas');
   const [statusFilter, setStatusFilter] = useState<'todos' | 'activos' | 'inactivos'>('todos');
   const [sortBy, setSortBy] = useState<'recientes' | 'antiguos' | 'codigo' | 'precio_asc' | 'precio_desc'>('recientes');
@@ -112,6 +179,22 @@ export default function AdminProductosPage() {
     return ['Todas', ...Array.from(brandSet).sort()];
   }, [productos]);
 
+  // Conteo por categoría para los tabs de navegación rápida
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { TODOS: productos.length };
+    productos.forEach((p) => {
+      const cat = (p.categoria || '').toLowerCase();
+      TABS_CATEGORIAS.forEach((t) => {
+        if (t.key === 'TODOS') return;
+        const sel = t.label.toLowerCase();
+        if (cat.includes(sel) || cat.includes(t.key.toLowerCase())) {
+          counts[t.key] = (counts[t.key] || 0) + 1;
+        }
+      });
+    });
+    return counts;
+  }, [productos]);
+
   // Filtered products list
   const filteredProductos = useMemo(() => {
     const list = productos.filter((p) => {
@@ -121,16 +204,18 @@ export default function AdminProductosPage() {
         const codigo = (p.codigo_filtrar || '').toLowerCase();
         const titulo = (p.titulo_producto || '').toLowerCase();
         const desc = (p.descripcion_aplicacion || '').toLowerCase();
-        if (!codigo.includes(term) && !titulo.includes(term) && !desc.includes(term)) {
+        const equiv = (p.equivalencias || '').toLowerCase();
+        if (!codigo.includes(term) && !titulo.includes(term) && !desc.includes(term) && !equiv.includes(term)) {
           return false;
         }
       }
 
       // Category
-      if (selectedCategoria !== 'Todas') {
+      if (selectedCategoria !== 'TODOS' && selectedCategoria !== 'Todas') {
         const cat = (p.categoria || '').toLowerCase();
-        const sel = selectedCategoria.toLowerCase();
-        if (!cat.includes(sel)) {
+        const tab = TABS_CATEGORIAS.find((t) => t.key === selectedCategoria);
+        const sel = tab ? tab.label.toLowerCase() : selectedCategoria.toLowerCase().replace(/^filtros de\s+/i, '');
+        if (!cat.includes(sel) && !cat.includes(selectedCategoria.toLowerCase())) {
           return false;
         }
       }
@@ -172,6 +257,22 @@ export default function AdminProductosPage() {
     setCurrentPage(1);
     setSelectedIds(new Set());
   }, [searchTerm, selectedCategoria, selectedMarca, statusFilter, sortBy]);
+
+  const hasActiveFilters =
+    searchTerm.trim() !== '' ||
+    selectedCategoria !== 'TODOS' ||
+    selectedMarca !== 'Todas' ||
+    statusFilter !== 'todos' ||
+    sortBy !== 'recientes';
+
+  const resetAllFilters = () => {
+    setSearchTerm('');
+    setSelectedCategoria('TODOS');
+    setSelectedMarca('Todas');
+    setStatusFilter('todos');
+    setSortBy('recientes');
+    setCurrentPage(1);
+  };
 
   // Paginated list
   const totalPages = Math.ceil(filteredProductos.length / PAGE_SIZE) || 1;
@@ -216,14 +317,8 @@ export default function AdminProductosPage() {
     let nuevoValorOcultar: boolean | null = null;
 
     if (ocultarGlobal) {
-      // Si el catálogo está oculto globalmente:
-      // Si actualmente es excepción (false), quitar excepción (null -> se oculta por regla global)
-      // Si está oculto, poner como excepción (false -> se muestra el precio)
       nuevoValorOcultar = producto.ocultar_precio === false ? null : false;
     } else {
-      // Si el catálogo está visible globalmente:
-      // Si está oculto individualmente (true), mostrarlo (null)
-      // Si está visible, ocultarlo individualmente (true)
       nuevoValorOcultar = producto.ocultar_precio === true ? null : true;
     }
 
@@ -370,41 +465,46 @@ export default function AdminProductosPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-4">
+      {/* HEADER PRINCIPAL */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-800/80">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
-            <Package className="w-6 h-6 text-blue-500" />
-            <span>GESTIÓN DE PRODUCTOS</span>
-          </h1>
-          <p className="text-xs font-semibold text-slate-400 mt-1">
-            Administrá todos los repuestos del catálogo ({filteredProductos.length} de {productos.length} items).
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-white tracking-tight">
+              Gestión de Productos
+            </h1>
+            <span className="bg-slate-800 text-slate-300 text-[11px] font-semibold px-2 py-0.5 rounded border border-slate-700">
+              {productos.length.toLocaleString()} items
+            </span>
+          </div>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Administrá precios, categorías, estados y compatibilidades del catálogo general.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* ACCIONES SUPERIORES */}
+        <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
           {selectedIds.size > 0 && (
             <button
               onClick={() => setShowBulkModal(true)}
-              className="bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs px-4 py-3 rounded-2xl flex items-center gap-2 transition-all shadow-lg shadow-purple-600/25 animate-fade-in"
+              className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm animate-fade-in"
             >
-              <Layers className="w-4 h-4" />
-              <span>Editar Seleccionados ({selectedIds.size})</span>
+              <Layers className="w-3.5 h-3.5" />
+              <span>Editar ({selectedIds.size})</span>
             </button>
           )}
 
           <Link
             href="/admin/importar"
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-4 py-3 rounded-2xl flex items-center gap-2 transition-all shadow-lg shadow-emerald-600/25 shrink-0"
+            className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
           >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>Importar Excel / CSV</span>
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Importar Planilla</span>
           </Link>
 
           <Link
             href="/admin/producto/nuevo"
-            className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs px-4 py-3 rounded-2xl flex items-center gap-2 transition-all shadow-lg shadow-blue-600/25 shrink-0"
+            className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm"
           >
             <Plus className="w-4 h-4" />
             <span>Nuevo Producto</span>
@@ -412,24 +512,33 @@ export default function AdminProductosPage() {
         </div>
       </div>
 
-      {/* BANNER CONTROL GLOBAL DE PRECIOS */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 md:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-2xl border flex items-center justify-center shrink-0 ${
+      {/* BARRA COMPACTA DE CONTROL GLOBAL DE PRECIOS */}
+      <div className="bg-slate-900/80 border border-slate-800 rounded-lg p-2.5 px-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-sm">
+        <div className="flex items-center gap-2.5">
+          <div className={`w-7 h-7 rounded-md border flex items-center justify-center shrink-0 ${
             ocultarGlobal
               ? 'bg-purple-500/10 border-purple-500/20 text-purple-400'
               : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
           }`}>
-            {ocultarGlobal ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            {ocultarGlobal ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
           </div>
           <div>
-            <h3 className="text-xs font-black text-white uppercase tracking-wider">
-              Visibilidad de Precios en todo el Catálogo
-            </h3>
-            <p className="text-[11px] font-semibold text-slate-400 mt-0.5">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-white">
+                Visibilidad Global de Precios
+              </span>
+              <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${
+                ocultarGlobal
+                  ? 'bg-purple-500/15 text-purple-300 border-purple-500/30'
+                  : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+              }`}>
+                {ocultarGlobal ? 'Precios Ocultos' : 'Precios Visibles'}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400">
               {ocultarGlobal
-                ? 'Precios OCULTOS en la web pública (muestra "Consultar Precio" en todos los productos).'
-                : 'Precios VISIBLES en la web pública (salvo productos configurados individualmente como ocultos).'}
+                ? 'La web pública muestra "Consultar Precio" en los repuestos (excepto excepciones individuales).'
+                : 'La web pública muestra los precios numéricos en ARS.'}
             </p>
           </div>
         </div>
@@ -455,66 +564,83 @@ export default function AdminProductosPage() {
               type: 'success',
               title: nuevoEstado ? 'Precios ocultos globalmente' : 'Precios visibles globalmente',
               message: nuevoEstado
-                ? 'Todos los productos muestran "Consultar Precio". Podés hacer clic en el ojito de cualquier producto para mostrarlo como excepción.'
+                ? 'El catálogo ahora muestra "Consultar Precio". Podés hacer clic en el ojo de cada producto para marcarlo como excepción visible.'
                 : 'Se muestran los precios numéricos en la web pública.',
             });
           }}
-          className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all shadow-md shrink-0 flex items-center gap-2 ${
+          className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors shrink-0 flex items-center gap-1.5 border ${
             ocultarGlobal
-              ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/20'
-              : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+              ? 'bg-purple-600 hover:bg-purple-500 text-white border-purple-500/50'
+              : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
           }`}
         >
-          {ocultarGlobal ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          <span>{ocultarGlobal ? 'Ocultamiento Global Activo' : 'Ocultar Precios de Todo el Catálogo'}</span>
+          {ocultarGlobal ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+          <span>{ocultarGlobal ? 'Restablecer Precios Visibles' : 'Ocultar Precios Globalmente'}</span>
         </button>
       </div>
 
-      {/* FILTROS Y BÚSQUEDA */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 md:p-6 space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          
-          {/* INPUT DE BÚSQUEDA */}
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+      {/* TABS DE CATEGORÍAS (CLEAN SEGMENTED NAV) */}
+      <div className="flex items-center gap-1.5 border-b border-slate-800 pb-2 overflow-x-auto scrollbar-none">
+        {TABS_CATEGORIAS.map((tab) => {
+          const isSelected = selectedCategoria === tab.key;
+          const count = categoryCounts[tab.key] || 0;
+
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setSelectedCategoria(tab.key)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${
+                isSelected
+                  ? 'bg-blue-600 text-white shadow-sm font-bold'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/80 bg-slate-900/60 border border-slate-800/80'
+              }`}
+            >
+              <span>{tab.label}</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                  isSelected
+                    ? 'bg-blue-700/90 text-white'
+                    : 'bg-slate-800 text-slate-400'
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* TOOLBAR DE BÚSQUEDA Y FILTROS SECUNDARIOS */}
+      <div className="bg-slate-900/90 border border-slate-800 rounded-lg p-2.5 shadow-sm space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2 items-center">
+          {/* SEARCH INPUT (5 COLUMNS) */}
+          <div className="lg:col-span-5 relative">
+            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar por código, título..."
-              className="w-full pl-9 pr-9 py-2.5 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-blue-500 transition-all placeholder:text-slate-500"
+              placeholder="Buscar por código, aplicación o equivalencia..."
+              className="w-full pl-9 pr-8 py-1.5 bg-slate-950 border border-slate-800 rounded-md text-xs font-medium text-white outline-none focus:border-blue-500 transition-colors placeholder:text-slate-500"
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 p-0.5"
+                title="Limpiar búsqueda"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
 
-          {/* FILTRO CATEGORÍA */}
-          <div>
-            <select
-              value={selectedCategoria}
-              onChange={(e) => setSelectedCategoria(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-blue-500 transition-all cursor-pointer"
-            >
-              {CATEGORIAS.map((cat) => (
-                <option key={cat} value={cat}>
-                  Categoría: {cat}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* FILTRO MARCA */}
-          <div>
+          {/* FILTRO MARCA (3 COLUMNS) */}
+          <div className="lg:col-span-3">
             <select
               value={selectedMarca}
               onChange={(e) => setSelectedMarca(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-blue-500 transition-all cursor-pointer"
+              className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-md text-xs font-medium text-slate-200 outline-none focus:border-blue-500 transition-colors cursor-pointer"
             >
               {marcasFiltro.map((m) => (
                 <option key={m} value={m}>
@@ -524,12 +650,12 @@ export default function AdminProductosPage() {
             </select>
           </div>
 
-          {/* FILTRO ESTADO */}
-          <div>
+          {/* FILTRO ESTADO (2 COLUMNS) */}
+          <div className="lg:col-span-2">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-blue-500 transition-all cursor-pointer"
+              className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-md text-xs font-medium text-slate-200 outline-none focus:border-blue-500 transition-colors cursor-pointer"
             >
               <option value="todos">Estado: Todos</option>
               <option value="activos">Solo Activos</option>
@@ -537,37 +663,87 @@ export default function AdminProductosPage() {
             </select>
           </div>
 
-          {/* ORDENAMIENTO (POR FECHA DE INGRESO / CÓDIGO / PRECIO) */}
-          <div>
+          {/* ORDENAMIENTO (2 COLUMNS) */}
+          <div className="lg:col-span-2">
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-amber-300 outline-none focus:border-amber-500 transition-all cursor-pointer"
+              className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-md text-xs font-medium text-slate-200 outline-none focus:border-blue-500 transition-colors cursor-pointer"
             >
-              <option value="recientes">📅 Ingreso: Más Recientes</option>
-              <option value="antiguos">📅 Ingreso: Más Antiguos</option>
-              <option value="codigo">🔤 Código: A - Z</option>
-              <option value="precio_desc">💰 Precio: Mayor a Menor</option>
-              <option value="precio_asc">💰 Precio: Menor a Mayor</option>
+              <option value="recientes">Ingreso: Recientes</option>
+              <option value="antiguos">Ingreso: Antiguos</option>
+              <option value="codigo">Código: A - Z</option>
+              <option value="precio_desc">Precio: Mayor a Menor</option>
+              <option value="precio_asc">Precio: Menor a Mayor</option>
             </select>
           </div>
         </div>
+
+        {/* ACTIVE FILTERS SUMMARY BAR */}
+        {hasActiveFilters && (
+          <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2 text-xs flex-wrap">
+            <div className="flex items-center gap-1.5 text-slate-400 flex-wrap">
+              <span className="font-semibold text-slate-300 text-[11px]">
+                Filtros:
+              </span>
+              {selectedCategoria !== 'TODOS' && (
+                <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded text-[11px] border border-slate-700 flex items-center gap-1">
+                  Cat: {TABS_CATEGORIAS.find((t) => t.key === selectedCategoria)?.label || selectedCategoria}
+                  <button onClick={() => setSelectedCategoria('TODOS')} className="hover:text-white">✕</button>
+                </span>
+              )}
+              {selectedMarca !== 'Todas' && (
+                <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded text-[11px] border border-slate-700 flex items-center gap-1">
+                  Marca: {selectedMarca}
+                  <button onClick={() => setSelectedMarca('Todas')} className="hover:text-white">✕</button>
+                </span>
+              )}
+              {statusFilter !== 'todos' && (
+                <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded text-[11px] border border-slate-700 flex items-center gap-1">
+                  Estado: {statusFilter}
+                  <button onClick={() => setStatusFilter('todos')} className="hover:text-white">✕</button>
+                </span>
+              )}
+              {searchTerm && (
+                <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded text-[11px] border border-slate-700 flex items-center gap-1">
+                  &quot;{searchTerm}&quot;
+                  <button onClick={() => setSearchTerm('')} className="hover:text-white">✕</button>
+                </span>
+              )}
+              <span className="text-slate-500 font-mono text-[11px]">
+                ({filteredProductos.length} resultados)
+              </span>
+            </div>
+
+            <button
+              onClick={resetAllFilters}
+              className="text-blue-400 hover:text-blue-300 text-xs font-semibold flex items-center gap-1 transition-colors"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Restablecer</span>
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* TABLA DE PRODUCTOS */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+      {/* TABLA DE PRODUCTOS PROFESIONAL */}
+      <div className="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden shadow-sm">
         {loading ? (
-          <div className="p-20 text-center flex flex-col items-center justify-center gap-3">
-            <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-            <span className="text-xs font-bold text-slate-400">Cargando lista de productos...</span>
+          <div className="p-16 text-center flex flex-col items-center justify-center gap-3">
+            <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+            <span className="text-xs font-medium text-slate-400">Cargando catálogo de productos...</span>
           </div>
         ) : paginatedProductos.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-950/80 border-b border-slate-800 text-slate-400 font-black uppercase tracking-wider text-[10px]">
-                  <th className="p-4 w-10 text-center">
-                    <button onClick={toggleSelectAll} className="text-slate-400 hover:text-white">
+                <tr className="bg-slate-950 text-slate-400 font-semibold uppercase tracking-wider text-[10px] border-b border-slate-800">
+                  <th className="p-3 w-10 text-center">
+                    <button
+                      onClick={toggleSelectAll}
+                      className="text-slate-400 hover:text-white transition-colors"
+                      title="Seleccionar todos en esta página"
+                    >
                       {selectedIds.size === paginatedProductos.length && paginatedProductos.length > 0 ? (
                         <CheckSquare className="w-4 h-4 text-purple-400" />
                       ) : (
@@ -575,21 +751,24 @@ export default function AdminProductosPage() {
                       )}
                     </button>
                   </th>
-                  <th className="p-4 w-16">Foto</th>
-                  <th className="p-4">Código</th>
-                  <th className="p-4">Título / Descripción</th>
-                  <th className="p-4">Categoría</th>
-                  <th className="p-4">Marca</th>
-                  <th className="p-4">Precio</th>
-                  <th className="p-4 text-center">Estado</th>
-                  <th className="p-4 text-right">Acciones</th>
+                  <th className="p-3 w-12">Foto</th>
+                  <th className="p-3">Código</th>
+                  <th className="p-3">Título / Aplicación</th>
+                  <th className="p-3">Categoría</th>
+                  <th className="p-3">Marca</th>
+                  <th className="p-3">Precio ARS</th>
+                  <th className="p-3 text-center">Estado</th>
+                  <th className="p-3 text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 font-semibold text-slate-300">
+              <tbody className="divide-y divide-slate-800/70 text-slate-300">
                 {paginatedProductos.map((p) => {
                   const imgs = normalizarImagenes(p.imagen_url);
                   const isSelected = selectedIds.has(p.id);
                   const isActivo = p.activo !== false;
+                  const estaOcultoFinal = debeOcultarPrecio(p, ocultarGlobal);
+                  const esExcepcionVisible = ocultarGlobal && p.ocultar_precio === false;
+                  const catInfo = getCategoriaBadge(p.categoria);
 
                   return (
                     <tr
@@ -598,9 +777,12 @@ export default function AdminProductosPage() {
                         isSelected ? 'bg-purple-950/20' : ''
                       }`}
                     >
-                      {/* SELECT CHECKBOX */}
-                      <td className="p-4 text-center">
-                        <button onClick={() => toggleSelect(p.id)} className="text-slate-400 hover:text-white">
+                      {/* CHECKBOX */}
+                      <td className="p-3 text-center">
+                        <button
+                          onClick={() => toggleSelect(p.id)}
+                          className="text-slate-400 hover:text-white transition-colors"
+                        >
                           {isSelected ? (
                             <CheckSquare className="w-4 h-4 text-purple-400" />
                           ) : (
@@ -610,10 +792,10 @@ export default function AdminProductosPage() {
                       </td>
 
                       {/* MINIATURA */}
-                      <td className="p-4">
+                      <td className="p-3">
                         <Link
                           href={`/admin/producto/${encodeURIComponent(p.codigo_filtrar)}`}
-                          className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center hover:border-blue-500 transition-colors block"
+                          className="w-9 h-9 rounded-md bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center hover:border-blue-500 transition-colors block shrink-0"
                         >
                           {imgs[0] ? (
                             <img src={imgs[0]} alt={p.codigo_filtrar} className="w-full h-full object-cover" />
@@ -624,7 +806,7 @@ export default function AdminProductosPage() {
                       </td>
 
                       {/* CÓDIGO */}
-                      <td className="p-4 font-mono font-black text-white text-xs">
+                      <td className="p-3 font-mono font-bold text-white text-xs">
                         <Link
                           href={`/admin/producto/${encodeURIComponent(p.codigo_filtrar)}`}
                           className="hover:text-blue-400 transition-colors"
@@ -634,100 +816,94 @@ export default function AdminProductosPage() {
                       </td>
 
                       {/* TÍTULO / APLICACIÓN */}
-                      <td className="p-4 max-w-xs">
+                      <td className="p-3 max-w-xs">
                         <Link
                           href={`/admin/producto/${encodeURIComponent(p.codigo_filtrar)}`}
-                          className="font-bold text-white hover:text-blue-400 transition-colors truncate block"
+                          className="font-medium text-white hover:text-blue-400 transition-colors truncate block"
                         >
                           {p.titulo_producto || 'Sin título'}
                         </Link>
                         {p.descripcion_aplicacion && (
-                          <div className="text-[10px] text-slate-500 truncate mt-0.5">
+                          <div className="text-[11px] text-slate-400 truncate mt-0.5">
                             {p.descripcion_aplicacion}
                           </div>
                         )}
                       </td>
 
-                      {/* CATEGORÍA */}
-                      <td className="p-4">
-                        <span className="bg-slate-800 text-slate-300 font-bold px-2.5 py-1 rounded-full text-[10px]">
-                          {p.categoria || 'Sin cat.'}
+                      {/* CATEGORÍA COLOR-CODED BADGE */}
+                      <td className="p-3">
+                        <span className={`font-semibold px-2 py-0.5 rounded text-[10px] border inline-flex items-center gap-1.5 ${catInfo.badgeClass}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${catInfo.dotClass}`} />
+                          <span>{catInfo.label}</span>
                         </span>
                       </td>
 
                       {/* MARCA */}
-                      <td className="p-4 font-bold text-slate-400 text-xs">
+                      <td className="p-3 text-slate-400 font-medium">
                         {p.marca_filtro || '-'}
                       </td>
 
-                      {/* PRECIO CON CONTROL DE OCULTAMIENTO Y EXCEPCIONES */}
-                      <td className="p-4">
-                        {(() => {
-                          const estaOcultoFinal = debeOcultarPrecio(p, ocultarGlobal);
-                          const esExcepcionVisible = ocultarGlobal && p.ocultar_precio === false;
+                      {/* PRECIO Y VISIBILIDAD */}
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`font-semibold text-xs ${
+                              esExcepcionVisible
+                                ? 'text-emerald-400 font-bold'
+                                : estaOcultoFinal
+                                  ? 'text-purple-400'
+                                  : 'text-white'
+                            }`}
+                          >
+                            {formatearPrecio(p.precio, estaOcultoFinal)}
+                          </span>
 
-                          return (
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`font-black text-xs ${
-                                  esExcepcionVisible
-                                    ? 'text-emerald-400 font-extrabold'
-                                    : estaOcultoFinal
-                                      ? 'text-purple-400 opacity-90'
-                                      : 'text-white'
-                                }`}
-                              >
-                                {formatearPrecio(p.precio, estaOcultoFinal)}
-                              </span>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleOcultarPrecio(p)}
+                            title={
+                              ocultarGlobal
+                                ? esExcepcionVisible
+                                  ? 'Excepción activa (Precio Visible). Clic para volver a ocultar.'
+                                  : 'Clic para mostrar este precio como EXCEPCIÓN al ocultamiento global.'
+                                : p.ocultar_precio === true
+                                  ? 'Precio oculto individualmente. Clic para mostrar.'
+                                  : 'Precio visible. Clic para ocultar individualmente.'
+                            }
+                            className={`p-1 rounded border transition-colors ${
+                              esExcepcionVisible
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                                : estaOcultoFinal
+                                  ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 hover:bg-purple-500/30'
+                                  : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white hover:bg-slate-700'
+                            }`}
+                          >
+                            {esExcepcionVisible ? (
+                              <Eye className="w-3 h-3 text-emerald-300" />
+                            ) : estaOcultoFinal ? (
+                              <EyeOff className="w-3 h-3 text-purple-300" />
+                            ) : (
+                              <Eye className="w-3 h-3" />
+                            )}
+                          </button>
 
-                              <button
-                                type="button"
-                                onClick={() => handleToggleOcultarPrecio(p)}
-                                title={
-                                  ocultarGlobal
-                                    ? esExcepcionVisible
-                                      ? 'Excepción activa (Precio Visible). Clic para volver a ocultar.'
-                                      : 'Clic para mostrar este precio como EXCEPCIÓN al ocultamiento global.'
-                                    : p.ocultar_precio === true
-                                      ? 'Precio oculto individualmente. Clic para mostrar.'
-                                      : 'Precio visible. Clic para ocultar individualmente.'
-                                }
-                                className={`p-1.5 rounded-lg border transition-all ${
-                                  esExcepcionVisible
-                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
-                                    : estaOcultoFinal
-                                      ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 hover:bg-purple-500/30'
-                                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white hover:bg-slate-700'
-                                }`}
-                              >
-                                {esExcepcionVisible ? (
-                                  <Eye className="w-3.5 h-3.5 text-emerald-300" />
-                                ) : estaOcultoFinal ? (
-                                  <EyeOff className="w-3.5 h-3.5 text-purple-300" />
-                                ) : (
-                                  <Eye className="w-3.5 h-3.5" />
-                                )}
-                              </button>
-
-                              {esExcepcionVisible && (
-                                <span className="bg-emerald-500/20 text-emerald-300 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border border-emerald-500/30">
-                                  Excepción
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })()}
+                          {esExcepcionVisible && (
+                            <span className="bg-emerald-500/20 text-emerald-300 text-[9px] font-bold uppercase tracking-wider px-1 py-0.2 rounded border border-emerald-500/30">
+                              Excepción
+                            </span>
+                          )}
+                        </div>
                       </td>
 
-                      {/* ESTADO (TOGGLE) */}
-                      <td className="p-4 text-center">
+                      {/* ESTADO TOGGLE */}
+                      <td className="p-3 text-center">
                         <button
                           onClick={() => handleToggleActivo(p)}
                           title="Hacé click para cambiar estado"
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black transition-all ${
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold transition-colors border ${
                             isActivo
-                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20'
-                              : 'bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20'
+                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
+                              : 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20'
                           }`}
                         >
                           {isActivo ? (
@@ -743,31 +919,31 @@ export default function AdminProductosPage() {
                       </td>
 
                       {/* ACCIONES */}
-                      <td className="p-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="p-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
                           <Link
                             href={`/producto/${encodeURIComponent(p.codigo_filtrar)}`}
                             target="_blank"
                             title="Ver en web pública"
-                            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-all"
+                            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-3.5 h-3.5" />
                           </Link>
 
                           <Link
                             href={`/admin/producto/${encodeURIComponent(p.codigo_filtrar)}`}
                             title="Editar producto"
-                            className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-xl transition-all"
+                            className="p-1.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-md transition-colors"
                           >
-                            <Edit2 className="w-4 h-4" />
+                            <Edit2 className="w-3.5 h-3.5" />
                           </Link>
 
                           <button
                             onClick={() => setProductToDelete(p)}
                             title="Eliminar producto"
-                            className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-all"
+                            className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-md transition-colors"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
@@ -778,34 +954,69 @@ export default function AdminProductosPage() {
             </table>
           </div>
         ) : (
-          <div className="p-16 text-center text-slate-400 font-semibold space-y-2">
-            <Package className="w-12 h-12 text-slate-700 mx-auto" />
-            <div>No se encontraron productos con los filtros seleccionados.</div>
+          <div className="p-12 text-center text-slate-400 space-y-2">
+            <Package className="w-8 h-8 text-slate-600 mx-auto" />
+            <div className="text-xs font-medium">No se encontraron productos con los filtros actuales.</div>
+            {hasActiveFilters && (
+              <button
+                onClick={resetAllFilters}
+                className="text-blue-400 hover:text-blue-300 text-xs font-semibold inline-flex items-center gap-1"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Limpiar filtros</span>
+              </button>
+            )}
           </div>
         )}
 
-        {/* PAGINACIÓN */}
+        {/* PAGINACIÓN ELEGANTE */}
         {totalPages > 1 && (
-          <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400">
-              Página {currentPage} de {totalPages} ({filteredProductos.length} productos)
+          <div className="p-3 border-t border-slate-800 bg-slate-950/80 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <span className="text-xs text-slate-400">
+              Mostrando <strong className="text-white">{(currentPage - 1) * PAGE_SIZE + 1}</strong> a{' '}
+              <strong className="text-white">
+                {Math.min(currentPage * PAGE_SIZE, filteredProductos.length)}
+              </strong>{' '}
+              de <strong className="text-white">{filteredProductos.length}</strong> productos
             </span>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-md text-xs text-slate-300 hover:bg-slate-800 disabled:opacity-40 transition-colors"
+                title="Primera página"
+              >
+                «
+              </button>
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="p-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-300 hover:bg-slate-800 disabled:opacity-40"
+                className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-md text-xs text-slate-300 hover:bg-slate-800 disabled:opacity-40 transition-colors flex items-center gap-1"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>Anterior</span>
               </button>
+
+              <span className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-md text-xs font-mono font-bold text-white">
+                {currentPage} / {totalPages}
+              </span>
 
               <button
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="p-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-300 hover:bg-slate-800 disabled:opacity-40"
+                className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-md text-xs text-slate-300 hover:bg-slate-800 disabled:opacity-40 transition-colors flex items-center gap-1"
               >
-                <ChevronRight className="w-4 h-4" />
+                <span>Siguiente</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-md text-xs text-slate-300 hover:bg-slate-800 disabled:opacity-40 transition-colors"
+                title="Última página"
+              >
+                »
               </button>
             </div>
           </div>
@@ -814,30 +1025,33 @@ export default function AdminProductosPage() {
 
       {/* MODAL EDICIÓN MASIVA */}
       {showBulkModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-5 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="text-base font-black text-white flex items-center gap-2">
-                <Layers className="w-5 h-5 text-purple-400" />
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Layers className="w-4 h-4 text-purple-400" />
                 <span>Edición Masiva ({selectedIds.size} productos)</span>
               </h3>
-              <button onClick={() => setShowBulkModal(false)} className="text-slate-500 hover:text-slate-300">
-                <X className="w-5 h-5" />
+              <button
+                onClick={() => setShowBulkModal(false)}
+                className="text-slate-500 hover:text-slate-300"
+              >
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3.5 text-xs">
               <div>
-                <label className="block text-[11px] font-black uppercase text-slate-400 mb-1.5">
+                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
                   Cambiar Categoría (opcional)
                 </label>
                 <select
                   value={bulkCategory}
                   onChange={(e) => setBulkCategory(e.target.value)}
-                  className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-purple-500"
+                  className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-medium text-white outline-none focus:border-purple-500 cursor-pointer"
                 >
                   <option value="">No modificar categoría</option>
-                  {CATEGORIAS.filter((c) => c !== 'Todas').map((c) => (
+                  {CATEGORIAS_FILTRO.map((c) => (
                     <option key={c} value={c}>
                       {c}
                     </option>
@@ -846,7 +1060,7 @@ export default function AdminProductosPage() {
               </div>
 
               <div>
-                <label className="block text-[11px] font-black uppercase text-slate-400 mb-1.5">
+                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
                   Establecer Nuevo Precio ARS (opcional)
                 </label>
                 <input
@@ -854,31 +1068,31 @@ export default function AdminProductosPage() {
                   value={bulkPriceChange}
                   onChange={(e) => setBulkPriceChange(e.target.value ? Number(e.target.value) : '')}
                   placeholder="Ej: 15500"
-                  className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-purple-500 placeholder:text-slate-600"
+                  className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-medium text-white outline-none focus:border-purple-500 placeholder:text-slate-600"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-black uppercase text-slate-400 mb-1.5">
+                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
                   Visibilidad de Precio (opcional)
                 </label>
                 <select
                   value={bulkPriceVisibility}
                   onChange={(e) => setBulkPriceVisibility(e.target.value as any)}
-                  className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-bold text-white outline-none focus:border-purple-500"
+                  className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-medium text-white outline-none focus:border-purple-500 cursor-pointer"
                 >
-                  <option value="no_change">No modificar visibilidad de precio</option>
+                  <option value="no_change">No modificar visibilidad</option>
                   <option value="mostrar">Mostrar precio públicamente</option>
-                  <option value="ocultar">Ocultar precio (Muestra 'Consultar Precio')</option>
+                  <option value="ocultar">Ocultar precio (Muestra &apos;Consultar Precio&apos;)</option>
                 </select>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => setShowBulkModal(false)}
-                className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-800"
+                className="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:bg-slate-800 transition-colors"
               >
                 Cancelar
               </button>
@@ -886,27 +1100,26 @@ export default function AdminProductosPage() {
                 type="button"
                 onClick={handleBulkUpdate}
                 disabled={bulkLoading}
-                className="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-purple-600/20"
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs rounded-lg shadow-sm transition-colors disabled:opacity-50"
               >
-                {bulkLoading ? 'Aplicando...' : 'Aplicar Cambios'}
+                {bulkLoading ? 'Aplicando cambios...' : 'Aplicar Cambios'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL CONFIRMACIÓN ELIMINACIÓN */}
+      {/* CONFIRM DELETE MODAL */}
       <ConfirmModal
-        isOpen={!!productToDelete}
+        isOpen={Boolean(productToDelete)}
         title="¿Eliminar producto?"
-        message={`¿Estás seguro de eliminar el producto "${productToDelete?.codigo_filtrar}"? Esta acción no se puede deshacer.`}
-        confirmLabel="Eliminar Producto"
+        message={`¿Estás seguro de eliminar el producto "${productToDelete?.codigo_filtrar}"? Se quitará del catálogo de forma permanente.`}
+        confirmLabel="Sí, Eliminar"
         isLoading={deleting}
         onConfirm={handleDeleteConfirm}
         onCancel={() => setProductToDelete(null)}
       />
 
-      {/* TOAST FEEDBACK */}
       <AdminToast toast={toast} onClose={() => setToast(null)} />
     </div>
   );
