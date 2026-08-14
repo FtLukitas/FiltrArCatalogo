@@ -37,3 +37,7 @@ scratch/
 *.sql
 INICIALIZAR_SUPABASE.sql
 
+# internal docs / data quality reports
+DATA_QUALITY.md
+
+
