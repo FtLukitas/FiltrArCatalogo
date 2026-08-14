@@ -1,4 +1,4 @@
-import SmartSearch from './componentes/SmartSearch';
+import BuscadorUnificado from './componentes/BuscadorUnificado';
 import BuscadorVehiculo from './componentes/BuscadorVehiculo';
 import ResultadoBuscador from './componentes/ResultadoBuscador';
 import { Package, Layers, MessageCircle } from 'lucide-react';
@@ -41,12 +41,12 @@ export default function HomePage() {
           </h1>
 
           <p className="text-slate-400 text-xs sm:text-base max-w-2xl mx-auto mb-8 sm:mb-10 font-medium px-2 leading-relaxed">
-            Búsqueda directa por código propio, equivalencias multimarca (WEGA, MANN, FRAM, OEM) o por marca y modelo de vehículo.
+            Búsqueda directa por vehículo (ej: 147, Hilux), equivalencias multimarca (WEGA, MANN, FRAM, OEM) o código de catálogo.
           </p>
 
-          {/* BUSCADOR INTELIGENTE UNIFICADO */}
-          <div className="max-w-3xl mx-auto">
-            <SmartSearch />
+          {/* BUSCADOR INTELIGENTE UNIFICADO CON DESAMBIGUACIÓN */}
+          <div className="max-w-4xl mx-auto">
+            <BuscadorUnificado />
           </div>
 
           {/* TARJETAS DE SERVICIO DISTRIBUIDORA */}
