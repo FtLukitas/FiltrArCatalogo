@@ -1,0 +1,492 @@
+{
+  "stats": {
+    "total_rows_input": 37115,
+    "models_before": 5326,
+    "models_modified": 14725,
+    "duplicates_purged": 995,
+    "total_rows_output": 36120,
+    "models_after": 3846
+  },
+  "sample_rows": [
+    {
+      "filtro_asociado": "EFPA620",
+      "marca": "FIAT",
+      "modelo": "ALLIS TRACTOR 115-90",
+      "version": "Fiat →",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "EFPA620",
+      "marca": "FIAT",
+      "modelo": "ALLIS TRACTOR 780R",
+      "version": "880-5 - 115-90 - Fiat →",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "EFPA620",
+      "marca": "FIAT",
+      "modelo": "ALLIS TRACTOR 880-5",
+      "version": "Fiat →",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "EFPA620",
+      "marca": "FIAT",
+      "modelo": "ALLIS TRACTOR 980",
+      "version": "→",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "EFPA620",
+      "marca": "FIAT",
+      "modelo": "ALLIS TRACTOR 100-90",
+      "version": "Fiat 8065.",
+      "año": "2006 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "EFPA620",
+      "marca": "FIAT",
+      "modelo": "ALLIS TRACTOR 110-90 4WD 6 CIL. (118 HP)",
+      "version": "Fiat 8065.",
+      "año": "2005 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "EFPA620",
+      "marca": "JOHN DEERE",
+      "modelo": "TRACTOR 2940",
+      "version": "→",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA620",
+      "marca": "JOHN DEERE",
+      "modelo": "TRACTOR 3350",
+      "version": "desde Serie 00",
+      "año": "2095 →",
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA620",
+      "marca": "JOHN DEERE",
+      "modelo": "TRACTOR 3150",
+      "version": "→",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA620",
+      "marca": "JOHN DEERE",
+      "modelo": "TRACTOR 3640",
+      "version": "→",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA620",
+      "marca": "JOHN DEERE",
+      "modelo": "TRACTOR 2140",
+      "version": "3140 - →",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA620",
+      "marca": "JOHN DEERE",
+      "modelo": "TRACTOR 1640F",
+      "version": "→",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA620",
+      "marca": "JOHN DEERE",
+      "modelo": "TRACTOR 2040S",
+      "version": "→",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA620",
+      "marca": "JOHN DEERE",
+      "modelo": "TRACTOR 2140",
+      "version": "→",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA620",
+      "marca": "JOHN DEERE",
+      "modelo": "TRACTOR 2750",
+      "version": "→",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA620",
+      "marca": "JOHN DEERE",
+      "modelo": "TRACTOR 2950",
+      "version": "→",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA620",
+      "marca": "NEW HOLLAND",
+      "modelo": "TRACTOR MODELO 100.90",
+      "version": "Fiat →",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA620",
+      "marca": "NEW HOLLAND",
+      "modelo": "TRACTOR MODELO 110.90 4WD 6 CIL. (118 HP)",
+      "version": "Fiat 8065.",
+      "año": "2005 →",
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA620",
+      "marca": "NEW HOLLAND",
+      "modelo": "TRACTOR MODELO 115.90",
+      "version": "Fiat →",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA620",
+      "marca": "NEW HOLLAND",
+      "modelo": "TRACTOR MODELO 880.5",
+      "version": "980 - Fiat →",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA620",
+      "marca": "NEW HOLLAND",
+      "modelo": "TRACTOR MODELO 880.5",
+      "version": "Fiat →",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA620",
+      "marca": "NEW HOLLAND",
+      "modelo": "TRACTOR MODELO 980",
+      "version": "→",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA614",
+      "marca": "FIAT",
+      "modelo": "ALLIS TRACTOR 115-90",
+      "version": "Fiat →",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "EFPA614",
+      "marca": "FIAT",
+      "modelo": "ALLIS TRACTOR 780R",
+      "version": "880-5 - 115-90 - Fiat →",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "EFPA614",
+      "marca": "FIAT",
+      "modelo": "ALLIS TRACTOR 880-5",
+      "version": "Fiat →",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "EFPA614",
+      "marca": "FIAT",
+      "modelo": "ALLIS TRACTOR 980",
+      "version": "→",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "EFPA614",
+      "marca": "FIAT",
+      "modelo": "ALLIS TRACTOR 100-90",
+      "version": "Fiat 8065.",
+      "año": "2006 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "EFPA614",
+      "marca": "FIAT",
+      "modelo": "ALLIS TRACTOR 110-90 4WD 6 CIL. (118 HP)",
+      "version": "Fiat 8065.",
+      "año": "2005 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "EFPA614",
+      "marca": "JOHN DEERE",
+      "modelo": "TRACTOR 2940",
+      "version": "→",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA614",
+      "marca": "JOHN DEERE",
+      "modelo": "TRACTOR 3350",
+      "version": "desde Serie 00",
+      "año": "2095 →",
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA614",
+      "marca": "JOHN DEERE",
+      "modelo": "TRACTOR 3150",
+      "version": "→",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA614",
+      "marca": "JOHN DEERE",
+      "modelo": "TRACTOR 3640",
+      "version": "→",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA614",
+      "marca": "JOHN DEERE",
+      "modelo": "TRACTOR 2140",
+      "version": "3140 - →",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA614",
+      "marca": "JOHN DEERE",
+      "modelo": "TRACTOR 1640F",
+      "version": "→",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA614",
+      "marca": "JOHN DEERE",
+      "modelo": "TRACTOR 2040S",
+      "version": "→",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA614",
+      "marca": "JOHN DEERE",
+      "modelo": "TRACTOR 2140",
+      "version": "→",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA614",
+      "marca": "JOHN DEERE",
+      "modelo": "TRACTOR 2750",
+      "version": "→",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA614",
+      "marca": "JOHN DEERE",
+      "modelo": "TRACTOR 2950",
+      "version": "→",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA614",
+      "marca": "NEW HOLLAND",
+      "modelo": "TRACTOR MODELO 100.90",
+      "version": "Fiat →",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA614",
+      "marca": "NEW HOLLAND",
+      "modelo": "TRACTOR MODELO 110.90 4WD 6 CIL. (118 HP)",
+      "version": "Fiat 8065.",
+      "año": "2005 →",
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA614",
+      "marca": "NEW HOLLAND",
+      "modelo": "TRACTOR MODELO 115.90",
+      "version": "Fiat →",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA614",
+      "marca": "NEW HOLLAND",
+      "modelo": "TRACTOR MODELO 880.5",
+      "version": "980 - Fiat →",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA614",
+      "marca": "NEW HOLLAND",
+      "modelo": "TRACTOR MODELO 880.5",
+      "version": "Fiat →",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "EFPA614",
+      "marca": "NEW HOLLAND",
+      "modelo": "TRACTOR MODELO 980",
+      "version": "→",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "MDH 249",
+      "marca": "GEELY",
+      "modelo": "EC7",
+      "version": "1,8 16v 140cv →",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "MDH 249",
+      "marca": "LIFAN",
+      "modelo": "X60",
+      "version": "1,8 16v 132cv",
+      "año": "2018 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "MDH 249",
+      "marca": "TOYOTA",
+      "modelo": "COROLLA",
+      "version": "1,6 16v 109cv 2vvti",
+      "año": "2004 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "MDH 249",
+      "marca": "TOYOTA",
+      "modelo": "COROLLA",
+      "version": "XEI - 1,8 134cv",
+      "año": "2002 → 2008",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "MDH 249",
+      "marca": "TOYOTA",
+      "modelo": "COROLLA",
+      "version": "1,8 16v 134cv 2vvti",
+      "año": "2008 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "MDH 249",
+      "marca": "TOYOTA",
+      "modelo": "COROLLA",
+      "version": "FIELDER - 1,8 16v 134cv 2vvti",
+      "año": "2004 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "MDH 249",
+      "marca": "TOYOTA",
+      "modelo": "COROLLA",
+      "version": "TD EXI - 2,0 td 16v 90cv",
+      "año": "2004 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "MDH 249",
+      "marca": "TOYOTA",
+      "modelo": "PRIUS",
+      "version": "1,5 MPFI",
+      "año": "2001 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "MDH 249",
+      "marca": "TOYOTA",
+      "modelo": "RAV-4",
+      "version": "2,0 16v 126cv",
+      "año": "1997 → 2000",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "MDH 249",
+      "marca": "TOYOTA",
+      "modelo": "RAV-4",
+      "version": "2,0 16v 148cv",
+      "año": "2000 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "MDH 249",
+      "marca": "LIFAN",
+      "modelo": "530 TALENT",
+      "version": "1,5 103cv",
+      "año": "2015 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "MDH 249",
+      "marca": "LIFAN",
+      "modelo": "620 TALENT",
+      "version": "1,6 16v 106cv",
+      "año": "2010 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "KIT-19",
+      "marca": "MERCEDES-BENZ",
+      "modelo": "CLASE X X 220D",
+      "version": "2,3 163cv",
+      "año": "2017 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "KIT-19",
+      "marca": "MERCEDES-BENZ",
+      "modelo": "CLASE X X 250D",
+      "version": "2,3 194cv",
+      "año": "2017 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "KIT-19",
+      "marca": "MERCEDES-BENZ",
+      "modelo": "VITO",
+      "version": "FURGÓN / COMBI / TOURER - 1,6 TD 115cv",
+      "año": "2016 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "KIT-19",
+      "marca": "MERCEDES-BENZ",
+      "modelo": "VITO",
+      "version": "119 - 2,0 CDI",
+      "año": "2016 →",
+      "tipo_vehiculo": "LIVIANO"
+    }
+  ]
+}

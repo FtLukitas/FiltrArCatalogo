@@ -1,0 +1,412 @@
+{
+  "stats": {
+    "total_wega_products_processed": 894,
+    "products_with_new_wega_data": 794,
+    "vehicles_from_wega_table": 14833,
+    "vehicles_preserved_from_db": 3756,
+    "duplicates_prevented": 8997
+  },
+  "sample_vehicles": [
+    {
+      "filtro_asociado": "142",
+      "marca": "DODGE",
+      "modelo": "1.8",
+      "version": "Plato Aro Plastisol",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "142",
+      "marca": "PEUGEOT",
+      "modelo": "504",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2001",
+      "marca": "CHEVROLET",
+      "modelo": "Aveo",
+      "version": "LS / LT 1,6 16v 103cv",
+      "año": "2008 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2001",
+      "marca": "CHEVROLET",
+      "modelo": "Aveo",
+      "version": "G3 LS / LT 1.6 16V DOHC",
+      "año": "2011 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2001",
+      "marca": "CHEVROLET",
+      "modelo": "AVEO",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2005",
+      "marca": "CITROEN",
+      "modelo": "C4",
+      "version": "1,6i 16V 110cv",
+      "año": "2007 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2005",
+      "marca": "PEUGEOT",
+      "modelo": "207",
+      "version": "Compact - 1,6 110cv (TU5JP4)",
+      "año": "2008 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2005",
+      "marca": "PEUGEOT",
+      "modelo": "207",
+      "version": "Hoggar - 1,6 16v",
+      "año": "2011 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2005",
+      "marca": "PEUGEOT",
+      "modelo": "307",
+      "version": "1,6 16v 110cv",
+      "año": "2001 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2005",
+      "marca": "PEUGEOT",
+      "modelo": "307",
+      "version": "Sedan - 1,6 16v 110cv",
+      "año": "2006 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2005",
+      "marca": "PEUGEOT",
+      "modelo": "HOGGAR",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2005",
+      "marca": "PEUGEOT",
+      "modelo": "307",
+      "version": "1.6 16v Nafta / Compact (2006 →)",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2005",
+      "marca": "PEUGEOT",
+      "modelo": "HOGGAR",
+      "version": "1.6 16v (2010 →)",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2005",
+      "marca": "PEUGEOT",
+      "modelo": "206",
+      "version": "Compact 1.6 16v (2006 →)",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2006",
+      "marca": "FIAT",
+      "modelo": "Bravo",
+      "version": "1,8 16v EtorQ",
+      "año": "2010 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2006",
+      "marca": "FIAT",
+      "modelo": "Doblo",
+      "version": "1,8 8v E-torq",
+      "año": "2011 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2006",
+      "marca": "FIAT",
+      "modelo": "Grand Siena",
+      "version": "1,6 E-Torq",
+      "año": "2012 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2006",
+      "marca": "FIAT",
+      "modelo": "Idea",
+      "version": "1,6 16v 115cv EtorQ",
+      "año": "2010 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2006",
+      "marca": "FIAT",
+      "modelo": "Idea",
+      "version": "Adventure - 1,6 16v 115cv EtorQ",
+      "año": "2011 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2006",
+      "marca": "FIAT",
+      "modelo": "Linea",
+      "version": "1,8 E-torq 16v 130cv",
+      "año": "2011 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2006",
+      "marca": "FIAT",
+      "modelo": "Palio",
+      "version": "Adventure - 1,6 16v EtorQ 115cv",
+      "año": "2011 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2006",
+      "marca": "FIAT",
+      "modelo": "Palio III",
+      "version": "1,6 e-Torq 16v 115cv",
+      "año": "2012 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2006",
+      "marca": "FIAT",
+      "modelo": "Punto",
+      "version": "1,6 16v 115cv",
+      "año": "2011 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2006",
+      "marca": "FIAT",
+      "modelo": "Punto",
+      "version": "Sporting - 1.6 16v E-torq 117cv",
+      "año": "2010 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2006",
+      "marca": "FIAT",
+      "modelo": "Siena",
+      "version": "1,6 16v 115cv",
+      "año": "2011 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2006",
+      "marca": "FIAT",
+      "modelo": "Strada",
+      "version": "Adventure - 1,6 16v EtorQ",
+      "año": "2010 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2006",
+      "marca": "FIAT",
+      "modelo": "PALIO",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2006",
+      "marca": "FIAT",
+      "modelo": "SIENA",
+      "version": "Adventure",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2006",
+      "marca": "FIAT",
+      "modelo": "STRADA",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2006",
+      "marca": "FIAT",
+      "modelo": "IDEA",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2006",
+      "marca": "FIAT",
+      "modelo": "LINEA",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2007",
+      "marca": "FIAT",
+      "modelo": "Fiorino",
+      "version": "1,4 EVO Fire 16v 87cv",
+      "año": "2014 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2007",
+      "marca": "FIAT",
+      "modelo": "Grand Siena",
+      "version": "1,4 Fire Evo",
+      "año": "2012 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2007",
+      "marca": "FIAT",
+      "modelo": "Grand Siena",
+      "version": "1,4 8v Evo",
+      "año": "2012 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2007",
+      "marca": "FIAT",
+      "modelo": "Mobi",
+      "version": "Easy / Way - 1,0 70cv",
+      "año": "2016 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2007",
+      "marca": "FIAT",
+      "modelo": "Nuevo Uno II",
+      "version": "1,4 fire EVO 8v 85cv",
+      "año": "2010 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2007",
+      "marca": "FIAT",
+      "modelo": "Nuevo Uno II",
+      "version": "Restyling - 1,0 80cv",
+      "año": "2016 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2007",
+      "marca": "FIAT",
+      "modelo": "Palio III",
+      "version": "1,4 Evo Fire 16v 85cv",
+      "año": "2012 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2007",
+      "marca": "FIAT",
+      "modelo": "FIORINO",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2008",
+      "marca": "CITROEN",
+      "modelo": "Berlingo II",
+      "version": "1,6 Hdi 92cv",
+      "año": "2011 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2008",
+      "marca": "CITROEN",
+      "modelo": "C4",
+      "version": "1,6 HDi 115cv",
+      "año": "2011 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2008",
+      "marca": "CITROEN",
+      "modelo": "C4",
+      "version": "Picasso - 1,6 HDI 16v 112cv",
+      "año": "2008 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2008",
+      "marca": "CITROEN",
+      "modelo": "C4",
+      "version": "Grand Picasso - 1,6 HDI 16v 112cv",
+      "año": "2009 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2008",
+      "marca": "CITROEN",
+      "modelo": "C4 II",
+      "version": "Lounge / 5 puertas - 1,6 HDI 115cv",
+      "año": "2013 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2008",
+      "marca": "PEUGEOT",
+      "modelo": "207",
+      "version": "HDi - 1,4 HDi 70 (DV4TD/TED/TED4, DV4C)",
+      "año": "2006 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2008",
+      "marca": "PEUGEOT",
+      "modelo": "207",
+      "version": "HDi - 1,6 HDI 110",
+      "año": "2010 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2008",
+      "marca": "PEUGEOT",
+      "modelo": "207",
+      "version": "HDi - 1,6 HDI 90",
+      "año": "2010 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2008",
+      "marca": "PEUGEOT",
+      "modelo": "208",
+      "version": "1,4 HDI 70FAP",
+      "año": "2013 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2008",
+      "marca": "PEUGEOT",
+      "modelo": "208",
+      "version": "1,6 HDI 110cv",
+      "año": "2013 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "2008",
+      "marca": "PEUGEOT",
+      "modelo": "208",
+      "version": "1,6 HDI 75cv",
+      "año": "2013 →",
+      "tipo_vehiculo": "LIVIANO"
+    }
+  ],
+  "total_target_count": 18589
+}

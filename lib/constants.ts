@@ -28,12 +28,21 @@ export const CATEGORIAS_UI = [
   'Filtros Varios',
 ];
 
-// Marcas de filtro propias comercializadas
-export const MARCAS_FILTRO_PROPIAS = [
-  'Pro Filter',
-  'Maxfil',
-  'MDH',
-  'Picborg',
-  'Common Rail',
-  'Genérico',
-];
+// Tipos de vehículo para el buscador guiado
+export const TIPOS_VEHICULO = [
+  {
+    id: 'LIVIANO',
+    nombre: 'Auto / Camioneta / SUV',
+    subtitulo: 'Línea liviana, utilitarios y pickups',
+    icon: 'Car',
+  },
+  {
+    id: 'PESADO',
+    nombre: 'Camión / Maquinaria / Agro',
+    subtitulo: 'Línea pesada, colectivos y tractores',
+    icon: 'Truck',
+  },
+] as const;
+
+export type TipoVehiculo = (typeof TIPOS_VEHICULO)[number]['id'];
+

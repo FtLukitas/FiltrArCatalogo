@@ -1,0 +1,413 @@
+{
+  "scrapeStats": {
+    "totalChecked": 1005,
+    "successPages": 1,
+    "emptyPages": 1004,
+    "errorPages": 0,
+    "totalVehiclesExtracted": 46
+  },
+  "totalConsolidated": 19102,
+  "duplicatesPrevented": 0,
+  "sampleVehicles": [
+    {
+      "filtro_asociado": "UL315",
+      "marca": "APLICACIONES:",
+      "modelo": "GENERAL",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UL315",
+      "marca": "HOMELITE",
+      "modelo": "1130G MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UL315",
+      "marca": "HOMELITE",
+      "modelo": "240SL MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UL315",
+      "marca": "HOMELITE",
+      "modelo": "330SL MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UL315",
+      "marca": "HOMELITE",
+      "modelo": "360SL MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UL315",
+      "marca": "HOMELITE",
+      "modelo": "410SL MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UL315",
+      "marca": "HOMELITE",
+      "modelo": "550SL MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UL315",
+      "marca": "HOMELITE",
+      "modelo": "DM50 MULTIPURPOSE MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UL315",
+      "marca": "HOMELITE",
+      "modelo": "SXL MINI A.O MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UL315",
+      "marca": "HOMELITE",
+      "modelo": "SUPER 1050 MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UL315",
+      "marca": "HOMELITE",
+      "modelo": "XL 1 A.O MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UL315",
+      "marca": "HOMELITE",
+      "modelo": "XL MINI MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UL315",
+      "marca": "JO-BU",
+      "modelo": "TODAS MOTOSIERRAS →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UL315",
+      "marca": "MC",
+      "modelo": "CULLOCH PRO MAC 700 /",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UL315",
+      "marca": "MC",
+      "modelo": "CULLOCH PRO MAC S610 / A →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UL315",
+      "marca": "MC",
+      "modelo": "CULLOCH SP 60/70/80/81/105/125C MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UL315",
+      "marca": "MC",
+      "modelo": "CULLOCH 700 / 850 / S610 / SLG6 / SP60 / SP70 / SP80 / SP81 / SP105 / SP125C →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UL315",
+      "marca": "PARTNER",
+      "modelo": "P",
+      "version": "Estándar",
+      "año": "2049 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UL315",
+      "marca": "HOMELITE",
+      "modelo": "2100 MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UL315",
+      "marca": "HOMELITE",
+      "modelo": "330 MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UL315",
+      "marca": "HOMELITE",
+      "modelo": "350 MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UL315",
+      "marca": "HOMELITE",
+      "modelo": "360 MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UL315",
+      "marca": "HOMELITE",
+      "modelo": "450 MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UC415",
+      "marca": "APLICACIONES:",
+      "modelo": "GENERAL",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UC415",
+      "marca": "HOMELITE",
+      "modelo": "1130G MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UC415",
+      "marca": "HOMELITE",
+      "modelo": "240SL MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UC415",
+      "marca": "HOMELITE",
+      "modelo": "330SL MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UC415",
+      "marca": "HOMELITE",
+      "modelo": "360SL MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UC415",
+      "marca": "HOMELITE",
+      "modelo": "410SL MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UC415",
+      "marca": "HOMELITE",
+      "modelo": "550SL MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UC415",
+      "marca": "HOMELITE",
+      "modelo": "DM50 MULTIPURPOSE MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UC415",
+      "marca": "HOMELITE",
+      "modelo": "SXL MINI A.O MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UC415",
+      "marca": "HOMELITE",
+      "modelo": "SUPER 1050 MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UC415",
+      "marca": "HOMELITE",
+      "modelo": "XL 1 A.O MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UC415",
+      "marca": "HOMELITE",
+      "modelo": "XL MINI MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UC415",
+      "marca": "JO-BU",
+      "modelo": "TODAS MOTOSIERRAS →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UC415",
+      "marca": "MC",
+      "modelo": "CULLOCH PRO MAC 700 /",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UC415",
+      "marca": "MC",
+      "modelo": "CULLOCH PRO MAC S610 / A →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UC415",
+      "marca": "MC",
+      "modelo": "CULLOCH SP 60/70/80/81/105/125C MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UC415",
+      "marca": "MC",
+      "modelo": "CULLOCH 700 / 850 / S610 / SLG6 / SP60 / SP70 / SP80 / SP81 / SP105 / SP125C →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UC415",
+      "marca": "PARTNER",
+      "modelo": "P",
+      "version": "Estándar",
+      "año": "2049 →",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UC415",
+      "marca": "HOMELITE",
+      "modelo": "2100 MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UC415",
+      "marca": "HOMELITE",
+      "modelo": "330 MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UC415",
+      "marca": "HOMELITE",
+      "modelo": "350 MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UC415",
+      "marca": "HOMELITE",
+      "modelo": "360 MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "UC415",
+      "marca": "HOMELITE",
+      "modelo": "450 MOTOSIERRA →",
+      "version": "Estándar",
+      "año": null,
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "FC922",
+      "marca": "VOLKSWAGEN",
+      "modelo": "AMAROK",
+      "version": "2.0 TDI - MEDIDAS DIAM 90 H220 PICOS 3X10 CON PORTA SENSOR",
+      "año": "2016",
+      "tipo_vehiculo": "LIVIANO"
+    },
+    {
+      "filtro_asociado": "FC922",
+      "marca": "CATERPILLAR",
+      "modelo": "MODELO",
+      "version": "N° de serie 57U1 y sig. →",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "FC922",
+      "marca": "CATERPILLAR",
+      "modelo": "MODELO",
+      "version": "824B - N° de serie 36H430 y sig. →",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    },
+    {
+      "filtro_asociado": "FC922",
+      "marca": "CATERPILLAR",
+      "modelo": "MODELO",
+      "version": "N° de serie 43H1 y sig. →",
+      "año": null,
+      "tipo_vehiculo": "PESADO"
+    }
+  ]
+}

@@ -1,0 +1,374 @@
+{
+  "total_equivalencias": 5826,
+  "brand_stats": {
+    "OEM": 1216,
+    "FRAM": 1464,
+    "MANN": 1156,
+    "MARENO": 316,
+    "MASTERFILT": 176,
+    "TECNECO": 198,
+    "MAHLE": 121,
+    "FARO": 55,
+    "SAKURA": 49,
+    "DONALDSON": 15,
+    "WIX": 7,
+    "MOTORCRAFT": 1,
+    "EMAFI": 1,
+    "WEGA": 1049,
+    "MASATERFILT": 1,
+    "MARFENO": 1
+  },
+  "cobertura_productos": 1009,
+  "sample_equivalencias": [
+    {
+      "producto_codigo": "KIT-01",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "17801OC010",
+      "codigo_competidor_normalizado": "17801OC010",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "AF-010T",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "17801OC010",
+      "codigo_competidor_normalizado": "17801OC010",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "KIT-01",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "90915YZZD2",
+      "codigo_competidor_normalizado": "90915YZZD2",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    },
+    {
+      "producto_codigo": "OF-711T",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "90915YZZD2",
+      "codigo_competidor_normalizado": "90915YZZD2",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    },
+    {
+      "producto_codigo": "KIT-01",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "PU835x",
+      "codigo_competidor_normalizado": "PU835X",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "FF-010T",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "PU835x",
+      "codigo_competidor_normalizado": "PU835X",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "KIT-01",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "871390K010",
+      "codigo_competidor_normalizado": "871390K010",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "KIT-02",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "178010L040",
+      "codigo_competidor_normalizado": "178010L040",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    },
+    {
+      "producto_codigo": "AF-040T",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "178010L040",
+      "codigo_competidor_normalizado": "178010L040",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    },
+    {
+      "producto_codigo": "KIT-02",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "90915YZZD2",
+      "codigo_competidor_normalizado": "90915YZZD2",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    },
+    {
+      "producto_codigo": "KIT-02",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "233900L070",
+      "codigo_competidor_normalizado": "233900L070",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    },
+    {
+      "producto_codigo": "FF-070T",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "233900L070",
+      "codigo_competidor_normalizado": "233900L070",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    },
+    {
+      "producto_codigo": "KIT-02",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "8713958010",
+      "codigo_competidor_normalizado": "8713958010",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "KIT-03",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "52046262",
+      "codigo_competidor_normalizado": "52046262",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "AF-262C",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "52046262",
+      "codigo_competidor_normalizado": "52046262",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "KIT-03",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "12636838",
+      "codigo_competidor_normalizado": "12636838",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "OF-838C",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "12636838",
+      "codigo_competidor_normalizado": "12636838",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "KIT-03",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "94771044",
+      "codigo_competidor_normalizado": "94771044",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "FF-044C",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "94771044",
+      "codigo_competidor_normalizado": "94771044",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "KIT-03",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "7803A004",
+      "codigo_competidor_normalizado": "7803A004",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    },
+    {
+      "producto_codigo": "KIT-04",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "AB399601AB",
+      "codigo_competidor_normalizado": "AB399601AB",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    },
+    {
+      "producto_codigo": "AF-399F",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "AB399601AB",
+      "codigo_competidor_normalizado": "AB399601AB",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    },
+    {
+      "producto_codigo": "KIT-04",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "HU7002z",
+      "codigo_competidor_normalizado": "HU7002Z",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "KIT-04",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "AB3J9176AC",
+      "codigo_competidor_normalizado": "AB3J9176AC",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    },
+    {
+      "producto_codigo": "FF-176F",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "AB3J9176AC",
+      "codigo_competidor_normalizado": "AB3J9176AC",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    },
+    {
+      "producto_codigo": "KIT-04",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "AB3919N619AA",
+      "codigo_competidor_normalizado": "AB3919N619AA",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    },
+    {
+      "producto_codigo": "KIT-05",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "2H0129620A",
+      "codigo_competidor_normalizado": "2H0129620A",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    },
+    {
+      "producto_codigo": "AF-2H0V",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "2H0129620A",
+      "codigo_competidor_normalizado": "2H0129620A",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    },
+    {
+      "producto_codigo": "KIT-05",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "HU7008z",
+      "codigo_competidor_normalizado": "HU7008Z",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "OF-03LV",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "HU7008z",
+      "codigo_competidor_normalizado": "HU7008Z",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "KIT-05",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "2H0127401A",
+      "codigo_competidor_normalizado": "2H0127401A",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    },
+    {
+      "producto_codigo": "KIT-05",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "7H0819631A",
+      "codigo_competidor_normalizado": "7H0819631A",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    },
+    {
+      "producto_codigo": "KIT-06",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "2H0129620A",
+      "codigo_competidor_normalizado": "2H0129620A",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    },
+    {
+      "producto_codigo": "KIT-06",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "HU7008z",
+      "codigo_competidor_normalizado": "HU7008Z",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "KIT-06",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "2H0127401E",
+      "codigo_competidor_normalizado": "2H0127401E",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "FF-127V",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "2H0127401E",
+      "codigo_competidor_normalizado": "2H0127401E",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "KIT-06",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "7H0819631A",
+      "codigo_competidor_normalizado": "7H0819631A",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    },
+    {
+      "producto_codigo": "KIT-07",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "2H0129620A",
+      "codigo_competidor_normalizado": "2H0129620A",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    },
+    {
+      "producto_codigo": "KIT-07",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "059198045B",
+      "codigo_competidor_normalizado": "059198045B",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "OF-059V",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "059198045B",
+      "codigo_competidor_normalizado": "059198045B",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "KIT-07",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "2H6127401C",
+      "codigo_competidor_normalizado": "2H6127401C",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    },
+    {
+      "producto_codigo": "FF-401V",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "2H6127401C",
+      "codigo_competidor_normalizado": "2H6127401C",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    },
+    {
+      "producto_codigo": "KIT-07",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "7H0819631A",
+      "codigo_competidor_normalizado": "7H0819631A",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    },
+    {
+      "producto_codigo": "KIT-08",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "51977574",
+      "codigo_competidor_normalizado": "51977574",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "AF-74FI",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "51977574",
+      "codigo_competidor_normalizado": "51977574",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "KIT-08",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "71754237",
+      "codigo_competidor_normalizado": "71754237",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "OF-37FI",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "71754237",
+      "codigo_competidor_normalizado": "71754237",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "KIT-08",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "77366607",
+      "codigo_competidor_normalizado": "77366607",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "FF-77FI",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "77366607",
+      "codigo_competidor_normalizado": "77366607",
+      "fuente": "02_equivalencias_cruza.csv"
+    },
+    {
+      "producto_codigo": "KIT-09",
+      "marca_competidor": "OEM",
+      "codigo_competidor": "AB399601AB",
+      "codigo_competidor_normalizado": "AB399601AB",
+      "fuente": "Wega_Tabla_Equivalencias.csv"
+    }
+  ]
+}

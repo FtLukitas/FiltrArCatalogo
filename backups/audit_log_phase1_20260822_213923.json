@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-08-22T21:40:09.181696",
+  "total_before": 12219,
+  "total_after": 11900,
+  "duplicates_deleted": 319,
+  "tipo_vehiculo_distribution": {
+    "LIVIANO": 7556,
+    "PESADO": 4344
+  },
+  "years_standardized": 2217,
+  "years_nulled": 2988,
+  "backup_file": "e:/FiltrArCatalogo/backups\\backup_vehiculos_before_phase1_20260822_213923.json"
+}

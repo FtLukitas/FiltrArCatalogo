@@ -16,7 +16,6 @@ export interface Filtro {
   ocultar_precio?: boolean | null;
 }
 
-// Interface para los resultados de la búsqueda por vehículo (Tabla B)
 export interface ResultadoVehiculo {
   id?: number;
   marca?: string;
@@ -24,6 +23,7 @@ export interface ResultadoVehiculo {
   version: string | null;
   año: string | null;
   filtro_asociado: string;
+  tipo_vehiculo?: 'LIVIANO' | 'PESADO' | string | null;
 }
 
 // Opciones de filtrado para el explorador del catálogo

@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-08-22T21:58:52.347653",
+  "wega_products_synced": 894,
+  "total_vehicles_before": 11900,
+  "total_vehicles_after": 19056,
+  "wega_vehicles_count": 18589,
+  "non_wega_vehicles_preserved": 467,
+  "duplicates_in_db": 0,
+  "tipo_vehiculo_distribution": {
+    "LIVIANO": 12857,
+    "PESADO": 6199
+  },
+  "backup_file": "e:/FiltrArCatalogo/backups\\backup_vehiculos_before_wega_sync_20260822_215712.json",
+  "preview_file": "e:/FiltrArCatalogo/backups\\wega_sync_preview_20260822_215712.json"
+}

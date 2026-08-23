@@ -1,5 +1,5 @@
 import BuscadorUnificado from './componentes/BuscadorUnificado';
-import BuscadorVehiculo from './componentes/BuscadorVehiculo';
+import BuscadorGuiado from './componentes/BuscadorGuiado';
 import ResultadoBuscador from './componentes/ResultadoBuscador';
 import { Package, Layers, MessageCircle } from 'lucide-react';
 
@@ -88,10 +88,10 @@ export default function HomePage() {
       {/* CONTENIDO PRINCIPAL CON SECCIONES */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-12 sm:space-y-16 overflow-x-hidden">
 
-        {/* BUSCADOR POR VEHÍCULO */}
-        <BuscadorVehiculo />
+        {/* BUSCADOR GUIADO ASISTIDO (WIZARD DE VEHÍCULO + TIPO DE FILTRO + PRODUCTOS INMEDIATOS) */}
+        <BuscadorGuiado />
 
-        {/* SECCIÓN NUEVA RESULTADO BUSCADOR */}
+        {/* CATÁLOGO GENERAL Y EXPLORADOR */}
         <ResultadoBuscador />
 
       </div>

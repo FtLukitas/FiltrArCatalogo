@@ -14,9 +14,10 @@ Esta skill proporciona las pautas, esquemas y buenas prácticas específicas par
 ### Tablas Core:
 - **`productos_filtrar`**: Catálogo principal de repuestos (`codigo_filtrar` como UK).
 - **`equivalencias_cruza`**: Tabla de cruces de códigos con marcas competidoras (Wega, Mann, Fram, etc.).
-- **`vehiculos_filtrar`**: 10.700+ aplicaciones vehiculares asignadas a filtros (`filtro_asociado`).
+- **`vehiculos_filtrar`**: 12.000+ aplicaciones vehiculares asignadas a filtros (`filtro_asociado`, `marca`, `modelo`, `version`, `año`, `tipo_vehiculo`: `'PESADO'` | `'LIVIANO'`).
 - **`relaciones_productos`**: Relaciones N:M para Kits (`CONTIENE_COMPONENTE`) y sustitutos.
 - **`configuracion_catalogo`**: Ajustes globales key-value (ej: `ocultar_precios_global`).
+
 
 ---
 

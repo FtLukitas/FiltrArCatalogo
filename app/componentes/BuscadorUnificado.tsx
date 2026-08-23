@@ -157,12 +157,12 @@ export default function BuscadorUnificado({ onSelectProduct, initialValue = '' }
           let q = supabase.from('vehiculos_filtrar').select('*');
           if (tokens.length > 1) {
             const orConditions = tokens
-              .map((t) => `marca.ilike.%${t}%,modelo.ilike.%${t}%,version.ilike.%${t}%`)
+              .map((t) => `marca.ilike.%${t}%,modelo.ilike.%${t}%,version.ilike.%${t}%,año.ilike.%${t}%`)
               .join(',');
             q = q.or(orConditions);
           } else {
             q = q.or(
-              `marca.ilike.%${cleanInput}%,modelo.ilike.%${cleanInput}%,version.ilike.%${cleanInput}%`
+              `marca.ilike.%${cleanInput}%,modelo.ilike.%${cleanInput}%,version.ilike.%${cleanInput}%,año.ilike.%${cleanInput}%`
             );
           }
           const { data, error } = await q.limit(40);
@@ -299,15 +299,28 @@ export default function BuscadorUnificado({ onSelectProduct, initialValue = '' }
         // ── C. PRODUCTOS FILTRAR DIRECTOS ──
         setProductos(rawProds);
 
-        // AUTO-SELECCIONAR LA PESTAÑA MÁS RELEVANTE
-        if (listaVehiculos.length > 0) {
-          setActiveTab('vehiculos');
-        } else if (listaEquivs.length > 0) {
-          setActiveTab('equivalencias');
-        } else if (rawProds.length > 0) {
-          setActiveTab('productos');
+        // AUTO-DETECCIÓN INTELIGENTE DE PESTAÑA:
+        // Si parece un código de filtro (ej: "WO-", "W712", "SC-", "EA201", "PH10904"), priorizar equivalencias o productos
+        const looksLikeCode = /^(wo|ph|w|c|cuk|akx|fcd|sc|ea|af|of|ff|mif|mdh|\d{3,}[a-z]|\d+[-/]\d+)/i.test(cleanInput);
+
+        if (looksLikeCode) {
+          if (listaEquivs.length > 0) {
+            setActiveTab('equivalencias');
+          } else if (rawProds.length > 0) {
+            setActiveTab('productos');
+          } else if (listaVehiculos.length > 0) {
+            setActiveTab('vehiculos');
+          }
         } else {
-          setActiveTab('vehiculos');
+          if (listaVehiculos.length > 0) {
+            setActiveTab('vehiculos');
+          } else if (listaEquivs.length > 0) {
+            setActiveTab('equivalencias');
+          } else if (rawProds.length > 0) {
+            setActiveTab('productos');
+          } else {
+            setActiveTab('vehiculos');
+          }
         }
       } catch (err) {
         console.error('Error en BuscadorUnificado:', err);

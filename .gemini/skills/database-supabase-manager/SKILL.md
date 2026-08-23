@@ -40,4 +40,7 @@ Toda mutación debe pasar obligatoriamente por el siguiente flujo de 2 fases:
 1. **Protocolo Obligatorio de Backup**: Antes de ejecutar cualquier mutación masiva o script de normalización en Supabase, ejecutar `scripts/create_backup.ts` para resguardar copias JSON integrales en `backups/`.
 2. **Evaluación de Impacto**: Antes de modificar o sustituir un código de producto, **SIEMPRE** invocar `analyzeProductImpact(codigo)`.
 3. **Protección de Vistas `marcas_unicas` y `modelos_unicos`**: Al insertar en `vehiculos_filtrar`, el campo `marca` debe validarse contra `validateVehiclePayload`. Jamás insertar códigos de repuestos, marcas de la competencia o textos de scraping en `vehiculos_filtrar.marca`, ya que esto contamina las vistas SQL `marcas_unicas` y `modelos_unicos`.
-4. **Ejecución Atómica**: Una vez verificado y confirmado el riesgo, ejecutar las herramientas RPC atómicas correspondientes.
+4. **Campo Obligatorio `tipo_vehiculo`**: Toda inserción en `vehiculos_filtrar` debe incluir `tipo_vehiculo` (`'LIVIANO'` o `'PESADO'`).
+5. **Registro de Auditoría (Audit Log)**: Toda mutación masiva (>10 registros) debe registrar un archivo JSON en `backups/audit_log_<timestamp>.json` con el detalle de registros insertados, modificados o eliminados.
+6. **Ejecución Atómica**: Una vez verificado y confirmado el riesgo, ejecutar las herramientas RPC atómicas correspondientes.
+
