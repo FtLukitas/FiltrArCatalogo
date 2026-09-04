@@ -401,7 +401,7 @@ export default function BuscadorGuiado() {
   };
 
   return (
-    <section className="relative w-full max-w-7xl mx-auto rounded-3xl bg-slate-900/90 border border-slate-800 text-white shadow-2xl p-4 sm:p-8 overflow-hidden backdrop-blur-md">
+    <section id="buscador-guiado" className="relative w-full max-w-7xl mx-auto rounded-3xl bg-slate-900/90 border border-slate-800 text-white shadow-2xl p-4 sm:p-8 overflow-hidden backdrop-blur-md scroll-mt-24">
       {/* Fondo estético decorativo */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />

@@ -1,14 +1,14 @@
 import BuscadorUnificado from './componentes/BuscadorUnificado';
 import BuscadorGuiado from './componentes/BuscadorGuiado';
 import ResultadoBuscador from './componentes/ResultadoBuscador';
-import { Package, Layers, MessageCircle } from 'lucide-react';
+import { Car, ArrowDown } from 'lucide-react';
 
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-slate-50 overflow-x-hidden max-w-full">
 
       {/* HERO SECTION DISTRIBUIDORA */}
-      <section className="relative z-30 bg-slate-950 text-white pt-12 sm:pt-16 pb-20 sm:pb-24 px-4 sm:px-6 lg:px-8 border-b border-slate-800/80">
+      <section className="relative z-30 bg-slate-950 text-white pt-12 sm:pt-16 pb-16 sm:pb-20 px-4 sm:px-6 lg:px-8 border-b border-slate-800/80">
 
         {/* MESH RETÍCULA DE FONDO TÉCNICA */}
         <div className="absolute inset-0 opacity-[0.04] bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
@@ -49,37 +49,16 @@ export default function HomePage() {
             <BuscadorUnificado />
           </div>
 
-          {/* TARJETAS DE SERVICIO DISTRIBUIDORA */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 max-w-3xl mx-auto mt-12 sm:mt-16 text-left border-t border-slate-800/80 pt-6 sm:pt-8">
-            <div className="bg-slate-900/80 backdrop-blur-md p-3.5 sm:p-4 rounded-2xl border border-slate-800 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
-                <Package className="w-5 h-5 text-blue-400" />
-              </div>
-              <div>
-                <span className="text-[11px] sm:text-xs font-black text-white block">Venta Mayorista</span>
-                <span className="text-[10px] text-slate-400 font-semibold block">y Minorista</span>
-              </div>
-            </div>
-
-            <div className="bg-slate-900/80 backdrop-blur-md p-3.5 sm:p-4 rounded-2xl border border-slate-800 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shrink-0">
-                <Layers className="w-5 h-5 text-sky-400" />
-              </div>
-              <div>
-                <span className="text-[11px] sm:text-xs font-black text-white block">Cruces Directos</span>
-                <span className="text-[10px] text-slate-400 font-semibold block">Todas las Marcas</span>
-              </div>
-            </div>
-
-            <div className="bg-slate-900/80 backdrop-blur-md p-3.5 sm:p-4 rounded-2xl border border-slate-800 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
-                <MessageCircle className="w-5 h-5 text-indigo-400" />
-              </div>
-              <div>
-                <span className="text-[11px] sm:text-xs font-black text-white block">Atención Directa</span>
-                <span className="text-[10px] text-slate-400 font-semibold block">Por WhatsApp</span>
-              </div>
-            </div>
+          {/* ACCESO RÁPIDO AL ASISTENTE GUIADO INFERIOR */}
+          <div className="mt-5 flex items-center justify-center">
+            <a
+              href="#buscador-guiado"
+              className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 hover:border-sky-500/50 text-slate-300 hover:text-white text-xs sm:text-sm font-semibold transition-all group shadow-md"
+            >
+              <Car className="w-4 h-4 text-sky-400 group-hover:scale-110 transition-transform shrink-0" />
+              <span>¿No conocés el código? <strong className="text-sky-300 group-hover:text-sky-200">Elegí tu auto en el Asistente Guiado</strong></span>
+              <ArrowDown className="w-3.5 h-3.5 text-sky-400 group-hover:translate-y-0.5 transition-transform shrink-0" />
+            </a>
           </div>
 
         </div>

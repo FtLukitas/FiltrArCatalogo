@@ -44,6 +44,14 @@ Todo proceso de extracción o scraping debe generar un archivo JSON de vista pre
    - Para filtros que no tengan ninguna asociación con Wega, se preservan sus aplicaciones vehiculares legítimas una vez validadas y saneadas por `validation-integrity-checker`.
 3. **CERO Escritura Directa en BD**:
    - El scraper nunca ejecuta consultas SQL ni escribe en Supabase directamente. Pasa todo el payload normalizado a `validation-integrity-checker`.
+4. **Nomenclatura y Categorización Canónica de Filtros MAXFIL**:
+   - `EFPA...`: Filtros de Aire (Línea Pesada) (`categoria: 'Filtros de Aire (Línea Pesada)'`, título: `Filtro de Aire Pesado — ...`).
+   - `EA...` (`EA`, `EAH`, `EAC`, `EAP`, `EAFR`): Filtros de Aceite de Cartucho / Ecológico (`categoria: 'Filtros de Aceite'`, título: `Filtro de Aceite (Cartucho) — ...`).
+   - `EC...` (`EC`, `ECTC`, `ECC`): Filtros de Combustible de Cartucho (`categoria: 'Filtros de Combustible'`, título: `Filtro de Combustible (Cartucho) — ...`).
+   - `UC...` (`UC`, `UCA`, `UCM`): Unidades Selladas de Combustible (`categoria: 'Filtros de Combustible'`, título: `Filtro de Combustible (Blindado) — ...`).
+   - `UL...` / `ULF...` (`UL`, `ULF`, `ULH`): Unidades Selladas de Aceite (`categoria: 'Filtros de Aceite'`, título: `Filtro de Aceite (Blindado) — ...`).
+   - `MIF...` / `FN...`: Filtros de Inyección (`categoria: 'Filtros de Inyección'`).
+   - *Prohibición*: Queda terminantemente prohibido clasificar filtros Maxfil que no sean EFPA como línea pesada de aire.
 
 ---
 

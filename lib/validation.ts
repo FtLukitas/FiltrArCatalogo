@@ -44,51 +44,125 @@ export interface ReplacePayload {
   new_codigo: string;
 }
 
-// Marcas de vehículos 100% pesados / agro / industriales
+// Marcas de vehículos 100% pesados / agro / industriales / viales / colectivos (27 marcas)
 const MARCAS_PESADAS_SET = new Set([
-  'SCANIA', 'VOLVO', 'IVECO', 'MAN', 'DAF', 'KENWORTH', 'FREIGHTLINER',
-  'INTERNATIONAL', 'MACK', 'PETERBILT', 'WESTERN STAR', 'HINO',
-  'UD TRUCKS', 'ISUZU', 'MITSUBISHI FUSO', 'DONGFENG',
-  'JOHN DEERE', 'CATERPILLAR', 'CASE', 'NEW HOLLAND', 'MASSEY FERGUSON',
-  'VALTRA', 'ZANELLO', 'DEUTZ', 'DEUTZ AGRALE', 'KOMATSU', 'LIEBHERR', 'JCB',
-  'BOBCAT', 'HYSTER', 'CLARK', 'YALE', 'AGRALE', 'CUMMINS', 'MWM', 'PERKINS',
-  'RENAULT TRUCKS', 'DIMEX', 'PEGASO'
+  'AGCO', 'AGRALE', 'BOBCAT', 'CASE', 'CATERPILLAR', 'CLAAS',
+  'DEUTZ-AGRALE', 'DEUTZ', 'DEUTZ AGRALE', 'DIMEX', 'DON ROQUE', 'EL DETALLE',
+  'HELI', 'INTERNATIONAL', 'IVECO', 'JCB', 'JOHN DEERE', 'KOMATSU',
+  'KUBOTA', 'LIEBHERR', 'MASSEY FERGUSON', 'NEW HOLLAND',
+  'PAUNY', 'PUMA', 'RENAULT TRUCKS', 'SCANIA', 'VALTRA',
+  'VASALLI', 'ZANELLO'
 ]);
 
-// Modelos pesados en marcas mixtas
-const MODELOS_PESADOS_MAP: Record<string, string[]> = {
-  'MERCEDES-BENZ': ['SPRINTER', 'ACCELO', 'ATEGO', 'AXOR', 'ACTROS', 'AROCS',
-    '1114', '1214', '1517', '1620', '1633', '1634', '1718', '1720', '1938',
-    'L1113', 'L1114', 'L1313', 'L1418', 'L1618', 'O371', 'OF', 'OH', 'LO', 'LK', 'LP', 'LS'],
-  'FORD': ['CARGO', 'F-14000', 'F-12000', 'F-4000', 'F14000', 'F12000', 'F4000', 'TRANSIT', 'CAMION'],
-  'VOLKSWAGEN': ['CONSTELLATION', 'DELIVERY', 'WORKER', '8.150', '9.150', '13.180', '15.180', '17.250', '24.250', '31.320', 'TITAN', 'VOLKSBUS'],
-  'CHEVROLET': ['SILVERADO', 'KODIAK', 'NHR', 'NKR', 'NPR', 'NQR'],
-  'TOYOTA': ['DYNA', 'COASTER', 'LAND CRUISER'],
-  'FIAT': ['DUCATO', 'DAILY'],
-  'RENAULT': ['MASTER', 'MIDLUM', 'PREMIUM', 'KERAX', 'MAGNUM'],
-  'HYUNDAI': ['HD', 'MIGHTY', 'UNIVERSE', 'COUNTY'],
-  'NISSAN': ['CABSTAR', 'ATLEON'],
-  'DODGE': ['RAM 2500', 'RAM 3500', 'RAM 4500', 'RAM 5500'],
-};
+// Marcas de vehículos 100% livianos (autos particulares / SUVs / compactos) (28 marcas)
+const MARCAS_LIVIANAS_SET = new Set([
+  'ALFA ROMEO', 'ASIA', 'AUDI', 'BMW', 'CHERY', 'CHRYSLER',
+  'CITROEN', 'DAEWOO', 'DAIHATSU', 'DS', 'GEELY', 'HONDA',
+  'JAC', 'JAGUAR', 'JEEP', 'KIA', 'LAND ROVER', 'LIFAN',
+  'MAZDA', 'MINI', 'PEUGEOT', 'PORSCHE', 'RAM', 'SEAT',
+  'SMART', 'SSANG YONG', 'SUBARU', 'SUZUKI'
+]);
+
+// Regex para autos, SUVs y utilitarios livianos de Mercedes-Benz (evita falsos positivos como LI-VIANO)
+const MB_LIVIANO_REGEX = /\b(SPRINTER|VITO|VIANO|CITAN|CLASE\s+[ABCESGV]|GLA|GLB|GLC|GLE|GLS|GLK|ML|SLK|CLS|290\s*GD|300\s*GD|350\s*GD|300\s*TD\s*SERIE\s*S\s*124|V\s*230)\b/i;
+
+// Modelos livianos de Volvo (autos y SUVs de pasajeros)
+const VOLVO_LIVIANO_MODELS = [
+  'S40', 'V50', 'C30', 'V40', '850', '940', 'XC60', 'XC70', 'S70', 'S80',
+  'V70', 'C70', 'C-S40', '240', '740', '760', '960'
+];
 
 /**
  * Clasifica un vehículo en LIVIANO o PESADO según su marca y modelo.
+ * Aplica la taxonomía oficial de FiltrAr sobre las 69 marcas del catálogo.
  */
 export function classifyVehicleType(marcaRaw: string | null | undefined, modeloRaw: string | null | undefined): 'LIVIANO' | 'PESADO' {
   const marca = (marcaRaw || '').trim().toUpperCase();
   const modelo = (modeloRaw || '').trim().toUpperCase();
 
-  if (MARCAS_PESADAS_SET.has(marca)) {
-    return 'PESADO';
+  // 1. Marcas puras
+  if (MARCAS_PESADAS_SET.has(marca)) return 'PESADO';
+  if (MARCAS_LIVIANAS_SET.has(marca)) return 'LIVIANO';
+
+  // 2. Marcas mixtas
+  if (marca === 'MERCEDES-BENZ') {
+    return MB_LIVIANO_REGEX.test(modelo) ? 'LIVIANO' : 'PESADO';
   }
 
-  const pesadosDeMarca = MODELOS_PESADOS_MAP[marca];
-  if (pesadosDeMarca) {
-    for (const m of pesadosDeMarca) {
-      if (modelo.includes(m)) {
-        return 'PESADO';
-      }
-    }
+  if (marca === 'VOLKSWAGEN') {
+    const vwHeavy = [
+      'CONSTELLATION', 'COSNTELLATION', 'DELIVERY', 'WORKER', 'METEOR', 'TITAN', 'VOLKSBUS', 'BUS',
+      'SERIE 2000', 'CAMIÓN', '13.170', '13.180', '15.180', '15.190', '17.220', '17.230', '17.240',
+      '17.250', '17.260', '18.310', '18.320', '19.320', '19.370', '24.220', '24.250',
+      '26.260', '31.260', '31.320', '31.370', '8.150', '9.150', '16220', '17220', '26260'
+    ];
+    return vwHeavy.some((k) => modelo.includes(k)) ? 'PESADO' : 'LIVIANO';
+  }
+
+  if (marca === 'FORD') {
+    const fordHeavy = [
+      'CARGO', 'F-14000', 'F 14000', 'F14000', 'F-12000', 'F 12000', 'F12000',
+      'F-4000', 'F 4000', 'F4000', 'F-600', 'F 600', 'F-700', 'F 700', 'F 6000', 'F 7000',
+      'F-3500', 'F 350', 'F-350', '1723', '1933', '2042', '2842', 'CAMION', 'CAMIÓN', 'CUMMINS'
+    ];
+    return fordHeavy.some((k) => modelo.includes(k)) ? 'PESADO' : 'LIVIANO';
+  }
+
+  if (marca === 'CHEVROLET') {
+    const chevyHeavy = [
+      'CAMIÓN', 'CAMION', '14000', '14-190', '15-190', '16-220', '6-100', '6-150',
+      'KODIAK', 'D 40', 'D-40', 'NPR', 'RACOR'
+    ];
+    return chevyHeavy.some((k) => modelo.includes(k)) ? 'PESADO' : 'LIVIANO';
+  }
+
+  if (marca === 'FIAT') {
+    const fiatHeavy = ['AGRI', 'ALLIS', 'TRACTOR', 'TRACTORES', 'CAMIONES', 'SOMECA', ' 411', ' 66', '619', '697', 'IVECO'];
+    return fiatHeavy.some((k) => modelo.includes(k)) ? 'PESADO' : 'LIVIANO';
+  }
+
+  if (marca === 'RENAULT') {
+    const renHeavy = ['TRUCKS', 'KERAX', 'MAGNUM', 'MIDLINER', 'MIDLUM', 'PREMIUM', 'CAMION', 'CAMIONES'];
+    return renHeavy.some((k) => modelo.includes(k)) ? 'PESADO' : 'LIVIANO';
+  }
+
+  if (marca === 'VOLVO') {
+    return VOLVO_LIVIANO_MODELS.some((k) => modelo.includes(k)) ? 'LIVIANO' : 'PESADO';
+  }
+
+  if (marca === 'TOYOTA') {
+    const toyHeavy = ['AUTOELEVADOR', 'COASTER', 'DYNA'];
+    return toyHeavy.some((k) => modelo.includes(k)) ? 'PESADO' : 'LIVIANO';
+  }
+
+  if (marca === 'HYUNDAI') {
+    const hyunHeavy = ['CAMION', 'H65', 'H72', 'H75', 'HD', 'MINIBUS COUNTRY'];
+    return hyunHeavy.some((k) => modelo.includes(k)) ? 'PESADO' : 'LIVIANO';
+  }
+
+  if (marca === 'ISUZU') {
+    const isuzuHeavy = ['NKR', 'NPR', 'NQR', 'FORWARD', 'CAMION'];
+    return isuzuHeavy.some((k) => modelo.includes(k)) ? 'PESADO' : 'LIVIANO';
+  }
+
+  if (marca === 'MITSUBISHI') {
+    const mitsHeavy = ['CANTER', 'FUSO'];
+    return mitsHeavy.some((k) => modelo.includes(k)) ? 'PESADO' : 'LIVIANO';
+  }
+
+  if (marca === 'NISSAN') {
+    const nissanHeavy = ['AUTOELEVADOR', 'CAMIÓN', 'CATERPILLAR', 'CPB', 'CPPRIMARIO', 'CPSECUNDARIO', 'ISUZU-GMC'];
+    return nissanHeavy.some((k) => modelo.includes(k)) ? 'PESADO' : 'LIVIANO';
+  }
+
+  if (marca === 'DODGE') {
+    const dodgeHeavy = ['CAMIÓN C 38', 'C 38 T', 'FARGO'];
+    return dodgeHeavy.some((k) => modelo.includes(k)) ? 'PESADO' : 'LIVIANO';
+  }
+
+  if (marca === 'TATA') {
+    const tataHeavy = ['608', '609'];
+    return tataHeavy.some((k) => modelo.includes(k)) ? 'PESADO' : 'LIVIANO';
   }
 
   return 'LIVIANO';
@@ -154,6 +228,18 @@ export function validateYear(yearRaw: string | null | undefined): string | null 
 }
 
 /**
+ * Deduce la categoría canónica para filtros de marca Maxfil según su prefijo técnico.
+ */
+export function deduceMaxfilCategory(codigo: string): string | null {
+  const c = codigo.trim().toUpperCase();
+  if (c.startsWith('EFPA')) return 'Filtros de Aire (Línea Pesada)';
+  if (c.startsWith('EA') || c.startsWith('UL')) return 'Filtros de Aceite';
+  if (c.startsWith('EC') || c.startsWith('UC')) return 'Filtros de Combustible';
+  if (c.startsWith('MIF') || c.startsWith('FN')) return 'Filtros de Inyección';
+  return null;
+}
+
+/**
  * Validador para payload de creación / edición de productos.
  */
 export function validateProductPayload(input: any): ValidationResult<ProductPayload> {
@@ -177,11 +263,25 @@ export function validateProductPayload(input: any): ValidationResult<ProductPayl
     return { success: false, errors };
   }
 
+  const marcaFinal = input.marca_filtro ? normalizarMarcaCompetidor(String(input.marca_filtro)) : 'Pro Filter';
+  let categoriaFinal = input.categoria ? String(input.categoria).trim() : '';
+
+  if (marcaFinal.toLowerCase() === 'maxfil') {
+    const deduced = deduceMaxfilCategory(codigoClean);
+    if (deduced && (!categoriaFinal || categoriaFinal === 'Filtros Generales' || (categoriaFinal === 'Filtros de Aire (Línea Pesada)' && !codigoClean.startsWith('EFPA')))) {
+      categoriaFinal = deduced;
+    }
+  }
+
+  if (!categoriaFinal) {
+    categoriaFinal = 'Filtros Generales';
+  }
+
   const sanitized: ProductPayload = {
     codigo_filtrar: codigoClean,
     titulo_producto: input.titulo_producto ? String(input.titulo_producto).trim() : '',
-    categoria: input.categoria ? String(input.categoria).trim() : 'Filtros Generales',
-    marca_filtro: input.marca_filtro ? normalizarMarcaCompetidor(String(input.marca_filtro)) : 'Pro Filter',
+    categoria: categoriaFinal,
+    marca_filtro: marcaFinal,
     precio: typeof input.precio === 'number' && input.precio > 0 ? input.precio : null,
     dimensiones: input.dimensiones ? String(input.dimensiones).trim() : '',
     descripcion_aplicacion: input.descripcion_aplicacion ? String(input.descripcion_aplicacion).trim() : '',

@@ -156,10 +156,12 @@ export default function BuscadorUnificado({ onSelectProduct, initialValue = '' }
         const vehiculosPromise = (async () => {
           let q = supabase.from('vehiculos_filtrar').select('*');
           if (tokens.length > 1) {
-            const orConditions = tokens
-              .map((t) => `marca.ilike.%${t}%,modelo.ilike.%${t}%,version.ilike.%${t}%,año.ilike.%${t}%`)
-              .join(',');
-            q = q.or(orConditions);
+            // Cada token debe cumplirse en al menos uno de los campos (AND entre tokens)
+            tokens.forEach((t) => {
+              q = q.or(
+                `marca.ilike.%${t}%,modelo.ilike.%${t}%,version.ilike.%${t}%,año.ilike.%${t}%`
+              );
+            });
           } else {
             q = q.or(
               `marca.ilike.%${cleanInput}%,modelo.ilike.%${cleanInput}%,version.ilike.%${cleanInput}%,año.ilike.%${cleanInput}%`
@@ -300,8 +302,9 @@ export default function BuscadorUnificado({ onSelectProduct, initialValue = '' }
         setProductos(rawProds);
 
         // AUTO-DETECCIÓN INTELIGENTE DE PESTAÑA:
-        // Si parece un código de filtro (ej: "WO-", "W712", "SC-", "EA201", "PH10904"), priorizar equivalencias o productos
-        const looksLikeCode = /^(wo|ph|w|c|cuk|akx|fcd|sc|ea|af|of|ff|mif|mdh|\d{3,}[a-z]|\d+[-/]\d+)/i.test(cleanInput);
+        // Detectar si parece código de filtro técnico (ej: "WO-180", "W712", "C 29 198", "PH10904", "SC-D74S", etc.)
+        // Evitar falsos positivos en marcas/modelos que empiezan con C o W (Corsa, Corolla, Clio, Cronos, Cruze, Civic, Wrangler, etc.)
+        const looksLikeCode = /^(wo[- ]?\d{2,}|ph[- ]?\d{3,}|w[- ]?\d{3,}|c[- ]\d{2,}|c\d{4,}|cuk[- ]?\d|cu[- ]?\d{3,}|cf[- ]?\d{2,}|wk[- ]?\d{2,}|akx[- ]?\d|fcd[- ]?\d|sc[- ]?\d|ea[- ]?\d|af[- ]?\d|of[- ]?\d|ff[- ]?\d|mif[- ]?\d|efpa[- ]?\d|ul[- ]?\d|ox[- ]?\d|lx[- ]?\d|hu[- ]?\d|\d{3,}[a-z]|\d+[-/]\d+)/i.test(cleanInput);
 
         if (looksLikeCode) {
           if (listaEquivs.length > 0) {
@@ -412,21 +415,21 @@ export default function BuscadorUnificado({ onSelectProduct, initialValue = '' }
                 <button
                   type="button"
                   onClick={() => setActiveTab('vehiculos')}
-                  className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all shrink-0 ${
+                  className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all shrink-0 cursor-pointer ${
                     activeTab === 'vehiculos'
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : totalVehiculosCount > 0
-                      ? 'text-slate-400 hover:text-white hover:bg-slate-900'
-                      : 'text-slate-600 opacity-50 cursor-not-allowed'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-900'
                   }`}
                 >
                   <Car className="w-3.5 h-3.5" />
                   <span>En Vehículos</span>
                   <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold ${
                       activeTab === 'vehiculos'
                         ? 'bg-blue-700 text-white'
-                        : 'bg-slate-800 text-slate-400'
+                        : totalVehiculosCount > 0
+                        ? 'bg-slate-800 text-sky-400'
+                        : 'bg-slate-800/60 text-slate-500'
                     }`}
                   >
                     {totalVehiculosCount}
@@ -437,21 +440,21 @@ export default function BuscadorUnificado({ onSelectProduct, initialValue = '' }
                 <button
                   type="button"
                   onClick={() => setActiveTab('equivalencias')}
-                  className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all shrink-0 ${
+                  className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all shrink-0 cursor-pointer ${
                     activeTab === 'equivalencias'
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : equivalencias.length > 0
-                      ? 'text-slate-400 hover:text-white hover:bg-slate-900'
-                      : 'text-slate-600 opacity-50 cursor-not-allowed'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-900'
                   }`}
                 >
                   <ArrowLeftRight className="w-3.5 h-3.5" />
                   <span>En Equivalencias</span>
                   <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold ${
                       activeTab === 'equivalencias'
                         ? 'bg-blue-700 text-white'
-                        : 'bg-slate-800 text-slate-400'
+                        : equivalencias.length > 0
+                        ? 'bg-slate-800 text-sky-400'
+                        : 'bg-slate-800/60 text-slate-500'
                     }`}
                   >
                     {equivalencias.length}
@@ -462,21 +465,21 @@ export default function BuscadorUnificado({ onSelectProduct, initialValue = '' }
                 <button
                   type="button"
                   onClick={() => setActiveTab('productos')}
-                  className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all shrink-0 ${
+                  className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all shrink-0 cursor-pointer ${
                     activeTab === 'productos'
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : productos.length > 0
-                      ? 'text-slate-400 hover:text-white hover:bg-slate-900'
-                      : 'text-slate-600 opacity-50 cursor-not-allowed'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-900'
                   }`}
                 >
                   <Package className="w-3.5 h-3.5" />
                   <span>En Productos</span>
                   <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold ${
                       activeTab === 'productos'
                         ? 'bg-blue-700 text-white'
-                        : 'bg-slate-800 text-slate-400'
+                        : productos.length > 0
+                        ? 'bg-slate-800 text-sky-400'
+                        : 'bg-slate-800/60 text-slate-500'
                     }`}
                   >
                     {productos.length}
@@ -499,6 +502,26 @@ export default function BuscadorUnificado({ onSelectProduct, initialValue = '' }
                     <div>
                       {vehiculoGrupos.length > 0 ? (
                         <div className="space-y-3">
+                          {/* BANNER ACCESO RÁPIDO AL ASISTENTE GUIADO */}
+                          <div className="p-2.5 sm:p-3 bg-gradient-to-r from-blue-950/40 via-slate-900 to-slate-900 border border-blue-500/25 rounded-xl flex items-center justify-between gap-3 text-xs">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="w-7 h-7 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center shrink-0">
+                                <Car className="w-3.5 h-3.5" />
+                              </div>
+                              <span className="text-slate-300 text-[11px] sm:text-xs truncate">
+                                ¿Buscás por <strong className="text-white">Marca y Modelo</strong> paso a paso?
+                              </span>
+                            </div>
+                            <a
+                              href="#buscador-guiado"
+                              onClick={() => setFocused(false)}
+                              className="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-[11px] shrink-0 transition-colors flex items-center gap-1 shadow-sm"
+                            >
+                              <span>Asistente Guiado</span>
+                              <ChevronRight className="w-3 h-3" />
+                            </a>
+                          </div>
+
                           <div className="flex items-center justify-between text-xs text-slate-400 pb-1">
                             <span className="font-bold text-slate-300">
                               Seleccioná el modelo para ver el service completo:
@@ -676,14 +699,25 @@ export default function BuscadorUnificado({ onSelectProduct, initialValue = '' }
                           })}
                         </div>
                       ) : (
-                        <div className="p-8 text-center text-slate-400 space-y-2">
+                        <div className="p-8 text-center text-slate-400 space-y-3">
                           <Car className="w-8 h-8 text-slate-600 mx-auto" />
                           <div className="text-xs font-bold text-slate-300">
                             No se encontraron modelos de vehículos directos con "{query}".
                           </div>
-                          <p className="text-[11px] text-slate-500">
-                            Revisá la pestaña de <strong>Equivalencias</strong> o <strong>Productos</strong> arriba para ver repuestos compatibles.
+                          <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                            Probá buscar por marca y modelo en nuestro asistente paso a paso, o revisá las pestañas de <strong>Equivalencias</strong> o <strong>Productos</strong>.
                           </p>
+                          <div className="pt-1">
+                            <a
+                              href="#buscador-guiado"
+                              onClick={() => setFocused(false)}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-md"
+                            >
+                              <Car className="w-3.5 h-3.5" />
+                              <span>Ir al Asistente Guiado por Vehículo</span>
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </a>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -693,7 +727,7 @@ export default function BuscadorUnificado({ onSelectProduct, initialValue = '' }
                   {activeTab === 'equivalencias' && (
                     <div>
                       {equivalencias.length > 0 ? (
-                        <div className="space-y-2.5">
+                        <div className="space-y-3">
                           <div className="flex items-center justify-between text-xs text-slate-400 pb-1">
                             <span className="font-bold text-slate-300">
                               Cruces encontrados con marcas de la competencia:
@@ -703,12 +737,13 @@ export default function BuscadorUnificado({ onSelectProduct, initialValue = '' }
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {equivalencias.map((eq) => {
                               const prod = eq.producto;
                               const badgeStyle = getCompetitorBadgeStyle(eq.marca_competidor);
                               const imgs = prod ? normalizarImagenes(prod.imagen_url) : [];
                               const thumb = imgs.length > 0 ? imgs[0] : null;
+                              const catBadge = getCategoriaBadge(prod?.categoria || null);
 
                               return (
                                 <Link
@@ -718,39 +753,84 @@ export default function BuscadorUnificado({ onSelectProduct, initialValue = '' }
                                     setFocused(false);
                                     if (onSelectProduct) onSelectProduct(eq.producto_codigo);
                                   }}
-                                  className="p-3 bg-slate-900 border border-slate-800 hover:border-blue-500/50 rounded-xl flex items-center justify-between gap-3 transition-all group"
+                                  className="p-3.5 bg-slate-900/90 border border-slate-800 hover:border-blue-500/50 hover:bg-slate-900 rounded-xl flex flex-col justify-between gap-3 transition-all group shadow-sm hover:shadow-md"
                                 >
-                                  <div className="flex items-center gap-3 min-w-0">
-                                    {/* BADGE COMPETIDOR */}
-                                    <div
-                                      className={`px-2 py-1 rounded-md border text-center shrink-0 ${badgeStyle}`}
-                                    >
-                                      <div className="text-[9px] font-bold uppercase tracking-wider">
-                                        {eq.marca_competidor}
+                                  {/* FILA SUPERIOR: BADGE COMPETIDOR -> FLECHA -> CÓDIGO FILTRAR */}
+                                  <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-800/80">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      {/* BADGE COMPETIDOR */}
+                                      <div
+                                        className={`px-2.5 py-1 rounded-lg border text-left shrink-0 ${badgeStyle}`}
+                                      >
+                                        <div className="text-[9px] font-bold uppercase tracking-wider opacity-80">
+                                          {eq.marca_competidor}
+                                        </div>
+                                        <div className="font-mono font-black text-xs">
+                                          {eq.codigo_competidor}
+                                        </div>
                                       </div>
-                                      <div className="font-mono font-black text-xs">
-                                        {eq.codigo_competidor}
-                                      </div>
-                                    </div>
 
-                                    {/* FLECHA INDICADORA */}
-                                    <ArrowRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                                      <ArrowRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all shrink-0" />
 
-                                    {/* PRODUCTO FILTRAR DESTINO */}
-                                    <div className="min-w-0">
-                                      <div className="flex items-center gap-1.5">
-                                        <span className="bg-blue-600/20 text-blue-300 border border-blue-500/30 font-mono font-extrabold text-xs px-1.5 py-0.5 rounded">
+                                      {/* PRODUCTO FILTRAR DESTINO */}
+                                      <div className="px-2.5 py-1 rounded-lg bg-blue-950/60 border border-blue-500/30 text-blue-300 shrink-0">
+                                        <div className="text-[9px] font-bold uppercase tracking-wider text-blue-400">
+                                          FILTRAR
+                                        </div>
+                                        <div className="font-mono font-black text-xs text-white">
                                           {eq.producto_codigo}
-                                        </span>
-                                      </div>
-                                      <div className="text-[11px] text-slate-300 font-bold truncate mt-0.5 group-hover:text-blue-400 transition-colors">
-                                        {prod?.titulo_producto || prod?.descripcion_aplicacion || 'Filtro FiltrAr'}
+                                        </div>
                                       </div>
                                     </div>
+
+                                    {prod?.categoria && (
+                                      <span
+                                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${catBadge}`}
+                                      >
+                                        {prod.categoria}
+                                      </span>
+                                    )}
                                   </div>
 
-                                  <div className="w-7 h-7 rounded-lg bg-slate-800 group-hover:bg-blue-600 text-slate-400 group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
-                                    <ChevronRight className="w-4 h-4" />
+                                  {/* FILA INFERIOR: IMAGEN + DETALLES + BOTÓN */}
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      {/* MINIATURA DEL PRODUCTO */}
+                                      <div className="w-12 h-12 rounded-lg bg-slate-950 border border-slate-800 p-1 flex items-center justify-center shrink-0 overflow-hidden group-hover:border-slate-700 transition-colors">
+                                        {thumb ? (
+                                          <img
+                                            src={thumb}
+                                            alt={eq.producto_codigo}
+                                            className="w-full h-full object-contain"
+                                            loading="lazy"
+                                          />
+                                        ) : (
+                                          <Package className="w-5 h-5 text-slate-700" />
+                                        )}
+                                      </div>
+
+                                      {/* TÍTULO Y APLICACIÓN */}
+                                      <div className="min-w-0">
+                                        <div className="text-xs font-bold text-slate-200 group-hover:text-blue-400 transition-colors truncate">
+                                          {prod?.titulo_producto || prod?.descripcion_aplicacion || `Filtro ${eq.producto_codigo}`}
+                                        </div>
+                                        <div className="text-[11px] text-slate-400 truncate mt-0.5">
+                                          {prod?.descripcion_aplicacion || 'Equivalencia verificada'}
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* BOTÓN O PRECIO */}
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      {prod?.precio && !debeOcultarPrecio(prod, ocultarGlobal) ? (
+                                        <span className="text-xs font-black text-emerald-400 font-mono">
+                                          {formatearPrecio(prod.precio, false)}
+                                        </span>
+                                      ) : null}
+                                      <div className="w-7 h-7 rounded-lg bg-slate-800 group-hover:bg-blue-600 text-slate-400 group-hover:text-white flex items-center justify-center transition-colors">
+                                        <ChevronRight className="w-4 h-4" />
+                                      </div>
+                                    </div>
                                   </div>
                                 </Link>
                               );
