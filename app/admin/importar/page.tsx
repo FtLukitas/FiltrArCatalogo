@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
   FileSpreadsheet,
@@ -10,27 +10,44 @@ import {
   AlertCircle,
   Loader2,
   ArrowLeft,
-  FileText,
   Boxes,
   Car,
   Layers,
   Sparkles,
   RefreshCw,
-  BookOpen,
   HelpCircle,
   Info,
-  ListChecks,
-  Zap,
-  ChevronDown,
-  ChevronUp,
+  Check,
+  X,
+  Sliders,
+  ChevronRight,
   ShieldCheck,
+  Tag,
+  Truck,
+  ArrowUpDown,
+  ExternalLink,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabase';
-import { sanitizarEquivalenciasTexto, sanitizarVehiculo, normalizarMarcaCompetidor } from '@/lib/utils';
+import {
+  normalizarMarcaCompetidor,
+  normalizarMarcaVehiculo,
+  normalizarModeloBase,
+  sanitizarEquivalenciasTexto,
+  sanitizarVehiculo,
+  normalizarCodigoCruza,
+} from '@/lib/normalization';
+import { classifyVehicleType } from '@/lib/validation';
 import AdminToast, { ToastMessage } from '../componentes/AdminToast';
 
-interface ParsedRow {
+/* ─────────────────────────────────────────────────────────────
+   TIPOS DE DATOS
+───────────────────────────────────────────────────────────── */
+
+export type TabImportar = 'productos' | 'vehiculos';
+
+// Fila parseada de producto
+export interface ParsedProductoRow {
   codigo_filtrar: string;
   titulo_producto: string;
   categoria: string;
@@ -39,35 +56,60 @@ interface ParsedRow {
   dimensiones: string;
   descripcion_aplicacion: string;
   equivalencias: string;
-  vehiculo_marca: string;
-  vehiculo_modelo: string;
-  vehiculo_version: string;
-  vehiculo_año: string;
-  status?: 'nuevo' | 'existente' | 'invalido';
+  status: 'nuevo' | 'existente' | 'invalido';
+}
+
+// Fila parseada de vehículo
+export interface ParsedVehiculoRow {
+  marca: string;
+  modelo: string;
+  modeloOriginal: string;
+  version: string;
+  año: string;
+  filtro_asociado: string;
+  tipo_vehiculo: 'LIVIANO' | 'PESADO';
+  categoria_filtro?: string;
+  status: 'nuevo' | 'similar_estandarizado' | 'duplicado_omitido';
+  motivo_status?: string;
 }
 
 export default function AdminImportarPage() {
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // Pestaña activa: productos o vehiculos
+  const [activeTab, setActiveTab] = useState<TabImportar>('productos');
 
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [parsedRows, setParsedRows] = useState<ParsedRow[]>([]);
-  const [existingCodes, setExistingCodes] = useState<Set<string>>(new Set());
-  
-  const [readingFile, setReadingFile] = useState(false);
+  // Input refs
+  const fileInputRefProductos = useRef<HTMLInputElement | null>(null);
+  const fileInputRefVehiculos = useRef<HTMLInputElement | null>(null);
+
+  // Estados generales
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+  const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [importLog, setImportLog] = useState<string | null>(null);
 
-  const [toast, setToast] = useState<ToastMessage | null>(null);
+  // Estados de Productos
+  const [fileProductos, setFileProductos] = useState<File | null>(null);
+  const [readingProductos, setReadingProductos] = useState(false);
+  const [parsedProductos, setParsedProductos] = useState<ParsedProductoRow[]>([]);
+  const [previewPageProd, setPreviewPageProd] = useState(1);
 
-  // Tutorial State
-  const [tutorialOpen, setTutorialOpen] = useState(true);
-  const [activeTutorialTab, setActiveTutorialTab] = useState<'pasos' | 'columnas' | 'equivalencias' | 'faq'>('pasos');
+  // Estados de Vehículos
+  const [fileVehiculos, setFileVehiculos] = useState<File | null>(null);
+  const [readingVehiculos, setReadingVehiculos] = useState(false);
+  const [parsedVehiculos, setParsedVehiculos] = useState<ParsedVehiculoRow[]>([]);
+  const [previewPageVeh, setPreviewPageVeh] = useState(1);
+  const [autoEstandarizarModelos, setAutoEstandarizarModelos] = useState(true);
+  const [omitirDuplicadosVeh, setOmitirDuplicadosVeh] = useState(true);
 
+  // Tutorial / FAQ colapsable
+  const [tutorialOpen, setTutorialOpen] = useState(false);
 
+  /* ─────────────────────────────────────────────────────────────
+     1. MÓDULO PRODUCTOS: DESCARGA DE PLANTILLA Y EXPORTACIÓN
+  ───────────────────────────────────────────────────────────── */
 
-  // 1. GENERAR Y DESCARGAR PLANTILLA EXCEL / CSV
-  const handleDescargarPlantilla = (format: 'csv' | 'xlsx') => {
+  const handleDescargarPlantillaProductos = (format: 'xlsx' | 'csv') => {
     const templateData = [
       {
         codigo_filtrar: 'AF-205',
@@ -76,12 +118,13 @@ export default function AdminImportarPage() {
         marca_filtro: 'Pro Filter',
         precio: 14500,
         dimensiones: 'Largo: 240mm, Ancho: 180mm, Alto: 45mm',
-        descripcion_aplicacion: 'Compatible con Toyota Hilux 2.4 / 2.8 TDi (2016 en adelante), SW4 2.8',
+        descripcion_aplicacion: 'Toyota Hilux 2.4 / 2.8 TDi (2016 en adelante), SW4 2.8',
         equivalencias: 'WEGA: JFA-0205 | MANN: C24005 | FRAM: CA11442',
-        vehiculo_marca: 'TOYOTA',
-        vehiculo_modelo: 'HILUX',
-        vehiculo_version: '2.8 TDi',
-        vehiculo_año: '2016-2023',
+        wega: 'JFA-0205',
+        mann: 'C24005',
+        fram: 'CA11442',
+        oem: '17801-0L040',
+        mareno: 'MR-205',
       },
       {
         codigo_filtrar: 'OF-711T',
@@ -92,10 +135,11 @@ export default function AdminImportarPage() {
         dimensiones: 'DE: 76mm | DI: 71mm | Alt: 123mm',
         descripcion_aplicacion: 'VW Amarok 2.0 TDi BiTurbo (2010 en adelante)',
         equivalencias: 'WEGA: WO-180 | MANN: W712/95 | FRAM: PH5803',
-        vehiculo_marca: 'VOLKSWAGEN',
-        vehiculo_modelo: 'AMAROK',
-        vehiculo_version: '2.0 TDi',
-        vehiculo_año: '2010-2022',
+        wega: 'WO-180',
+        mann: 'W712/95',
+        fram: 'PH5803',
+        oem: '03L115562',
+        mareno: 'MR-180',
       },
       {
         codigo_filtrar: 'CF-10430',
@@ -106,39 +150,127 @@ export default function AdminImportarPage() {
         dimensiones: 'Largo: 215mm, Ancho: 200mm, Alto: 30mm',
         descripcion_aplicacion: 'Ford Ranger 2.2 / 3.2 TDCi (2012 en adelante)',
         equivalencias: 'WEGA: AKX-3535 | MANN: CU22022',
-        vehiculo_marca: 'FORD',
-        vehiculo_modelo: 'RANGER',
-        vehiculo_version: '3.2 TDCi',
-        vehiculo_año: '2012-2023',
+        wega: 'AKX-3535',
+        mann: 'CU22022',
+        fram: '',
+        oem: 'AB39-19N619-AA',
+        mareno: '',
       },
     ];
 
-    const worksheet = XLSX.utils.json_to_sheet(templateData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Plantilla Productos');
+    const ws = XLSX.utils.json_to_sheet(templateData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Productos');
 
     if (format === 'xlsx') {
-      XLSX.writeFile(workbook, 'plantilla_importacion_filtrar.xlsx');
+      XLSX.writeFile(wb, 'plantilla_productos_filtrar.xlsx');
     } else {
-      XLSX.writeFile(workbook, 'plantilla_importacion_filtrar.csv', { bookType: 'csv' });
+      XLSX.writeFile(wb, 'plantilla_productos_filtrar.csv', { bookType: 'csv' });
     }
 
     setToast({
       id: Date.now().toString(),
       type: 'success',
-      title: 'Plantilla Descargada',
-      message: `La plantilla en formato .${format.toUpperCase()} se descargó correctamente. Usala para cargar tus datos.`,
+      title: 'Plantilla de Productos Descargada',
+      message: `Formato .${format.toUpperCase()} generado correctamente con columnas de equivalencias y precios.`,
     });
   };
 
-  // 2. PARSEAR ARCHIVO EXCEL O CSV CARGADO
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleExportarProductosExcel = async () => {
+    setExporting(true);
+    try {
+      // 1. Obtener todos los productos
+      const { data: prods, error: pErr } = await supabase
+        .from('productos_filtrar')
+        .select('*')
+        .order('id', { ascending: true });
+
+      if (pErr) throw pErr;
+      if (!prods || prods.length === 0) {
+        setToast({ id: Date.now().toString(), type: 'error', title: 'Sin datos', message: 'No hay productos para exportar.' });
+        return;
+      }
+
+      // 2. Obtener equivalencias cruzadas
+      const { data: equivs } = await supabase
+        .from('equivalencias_cruza')
+        .select('producto_codigo, marca_competidor, codigo_competidor');
+
+      const equivMap = new Map<string, { wega: string; mann: string; fram: string; oem: string; mareno: string; todas: string[] }>();
+      (equivs || []).forEach((eq) => {
+        const cod = eq.producto_codigo;
+        if (!equivMap.has(cod)) {
+          equivMap.set(cod, { wega: '', mann: '', fram: '', oem: '', mareno: '', todas: [] });
+        }
+        const item = equivMap.get(cod)!;
+        const marca = (eq.marca_competidor || '').toUpperCase();
+        item.todas.push(`${eq.marca_competidor}: ${eq.codigo_competidor}`);
+        if (marca === 'WEGA') item.wega = eq.codigo_competidor;
+        else if (marca === 'MANN' || marca === 'MANN-FILTER') item.mann = eq.codigo_competidor;
+        else if (marca === 'FRAM') item.fram = eq.codigo_competidor;
+        else if (marca === 'OEM') item.oem = eq.codigo_competidor;
+        else if (marca === 'MARENO') item.mareno = eq.codigo_competidor;
+      });
+
+      // 3. Mapear datos a planilla Excel
+      const rows = prods.map((p) => {
+        const eqData = equivMap.get(p.codigo_filtrar);
+        return {
+          codigo_filtrar: p.codigo_filtrar,
+          titulo_producto: p.titulo_producto || '',
+          categoria: p.categoria || '',
+          marca_filtro: p.marca_filtro || '',
+          precio: p.precio ?? '',
+          dimensiones: p.dimensiones || '',
+          descripcion_aplicacion: p.descripcion_aplicacion || '',
+          equivalencias: eqData?.todas.join(' | ') || p.equivalencias || '',
+          wega: eqData?.wega || '',
+          mann: eqData?.mann || '',
+          fram: eqData?.fram || '',
+          oem: eqData?.oem || '',
+          mareno: eqData?.mareno || '',
+          activo: p.activo !== false ? 'SI' : 'NO',
+        };
+      });
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Catálogo Productos');
+
+      const fecha = new Date().toISOString().split('T')[0];
+      XLSX.writeFile(wb, `catalogo_productos_filtrar_${fecha}.xlsx`);
+
+      setToast({
+        id: Date.now().toString(),
+        type: 'success',
+        title: 'Catálogo Exportado',
+        message: `Se descargaron ${rows.length} productos con sus equivalencias y precios.`,
+      });
+    } catch (err: any) {
+      console.error('Error exportando productos:', err);
+      setToast({
+        id: Date.now().toString(),
+        type: 'error',
+        title: 'Error en Exportación',
+        message: err.message || 'No se pudo generar el archivo Excel.',
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  /* ─────────────────────────────────────────────────────────────
+     2. MÓDULO PRODUCTOS: LECTURA Y PARSING DE PLANILLA
+  ───────────────────────────────────────────────────────────── */
+
+  const handleFileProductosChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setFileName(file.name);
-    setReadingFile(true);
+    setFileProductos(file);
+    setReadingProductos(true);
     setImportLog(null);
+    setPreviewPageProd(1);
 
     try {
       const data = await file.arrayBuffer();
@@ -154,111 +286,115 @@ export default function AdminImportarPage() {
           title: 'Planilla Vacía',
           message: 'No se encontraron filas con datos en la planilla seleccionada.',
         });
-        setReadingFile(false);
+        setReadingProductos(false);
         return;
       }
 
-      // Obtener lista de códigos existentes en Supabase para validar si son Nuevos o Existentes
-      const { data: dbCodes } = await supabase
-        .from('productos_filtrar')
-        .select('codigo_filtrar');
+      // Obtener códigos existentes en Supabase
+      const { data: dbCodes } = await supabase.from('productos_filtrar').select('codigo_filtrar');
+      const existingSet = new Set((dbCodes || []).map((p) => (p.codigo_filtrar || '').toUpperCase().trim()));
 
-      const existingSet = new Set((dbCodes || []).map((p) => (p.codigo_filtrar || '').toUpperCase()));
-      setExistingCodes(existingSet);
+      const parsed: ParsedProductoRow[] = [];
 
-      // Mapear y limpiar columnas
-      const mappedRows: (ParsedRow | null)[] = rawRows.map((row) => {
+      rawRows.forEach((row) => {
         const rawCodigo = String(
-          row.codigo_filtrar || row.CODIGO_FILTRAR || row.codigo || row.CODIGO || ''
+          row.codigo_filtrar || row.CODIGO_FILTRAR || row.codigo || row.CODIGO || row.cod || ''
         ).trim().toUpperCase();
 
-        if (!rawCodigo) return null;
+        if (!rawCodigo) return; // descartar filas sin código
 
-        const rawPrecio = row.precio || row.PRECIO || null;
-        const numPrecio = rawPrecio !== null && rawPrecio !== '' ? Number(rawPrecio) : null;
+        const rawPrecio = row.precio !== undefined ? row.precio : (row.PRECIO !== undefined ? row.PRECIO : row.lista);
+        let numPrecio: number | null = null;
+        if (rawPrecio !== null && rawPrecio !== undefined && rawPrecio !== '') {
+          const cleanNum = Number(String(rawPrecio).replace(/[^0-9.-]+/g, ''));
+          if (!isNaN(cleanNum)) numPrecio = cleanNum;
+        }
 
-        const status: 'nuevo' | 'existente' = existingSet.has(rawCodigo) ? 'existente' : 'nuevo';
+        // Combinar equivalencias si vinieron en columnas individuales
+        const eqParts: string[] = [];
+        if (row.equivalencias || row.EQUIVALENCIAS) eqParts.push(String(row.equivalencias || row.EQUIVALENCIAS));
+        if (row.wega || row.WEGA || row.wega_codigo) eqParts.push(`WEGA: ${String(row.wega || row.WEGA || row.wega_codigo)}`);
+        if (row.mann || row.MANN || row.mann_codigo) eqParts.push(`MANN: ${String(row.mann || row.MANN || row.mann_codigo)}`);
+        if (row.fram || row.FRAM || row.fram_codigo) eqParts.push(`FRAM: ${String(row.fram || row.FRAM || row.fram_codigo)}`);
+        if (row.oem || row.OEM || row.oem_codigo) eqParts.push(`OEM: ${String(row.oem || row.OEM || row.oem_codigo)}`);
+        if (row.mareno || row.MARENO || row.mh) eqParts.push(`MARENO: ${String(row.mareno || row.MARENO || row.mh)}`);
+        if (row.tecneco || row.TECNECO) eqParts.push(`TECNECO: ${String(row.tecneco || row.TECNECO)}`);
 
-        // Combinar columna equivalencias con columnas específicas si existen (wega_codigo, mann_codigo, etc.)
-        const equivParts: string[] = [];
-        if (row.equivalencias || row.EQUIVALENCIAS) equivParts.push(String(row.equivalencias || row.EQUIVALENCIAS));
-        if (row.wega_codigo || row.WEGA) equivParts.push(`WEGA: ${String(row.wega_codigo || row.WEGA)}`);
-        if (row.mann_codigo || row.MANN) equivParts.push(`MANN: ${String(row.mann_codigo || row.MANN)}`);
-        if (row.fram_codigo || row.FRAM) equivParts.push(`FRAM: ${String(row.fram_codigo || row.FRAM)}`);
-        if (row.oem_codigo || row.OEM) equivParts.push(`OEM: ${String(row.oem_codigo || row.OEM)}`);
-        const finalEquiv = equivParts.join(' | ').trim();
+        const eqFinal = eqParts.join(' | ').trim();
 
-        // Sanitizar vehículo para prevenir marcas duplicadas ("vw" -> "VOLKSWAGEN", etc.)
-        const vehClean = sanitizarVehiculo(
-          String(row.vehiculo_marca || row.VEHICULO_MARCA || '').trim(),
-          String(row.vehiculo_modelo || row.VEHICULO_MODELO || '').trim(),
-          String(row.vehiculo_version || row.VEHICULO_VERSION || '').trim()
-        );
+        // Categoría con fallback inteligente si está vacía
+        let cat = String(row.categoria || row.CATEGORIA || row.familia || '').trim();
+        if (!cat) {
+          if (rawCodigo.startsWith('AF') || rawCodigo.startsWith('C ')) cat = 'Filtros de Aire';
+          else if (rawCodigo.startsWith('OF') || rawCodigo.startsWith('W ') || rawCodigo.startsWith('WO')) cat = 'Filtros de Aceite';
+          else if (rawCodigo.startsWith('FF') || rawCodigo.startsWith('WK ') || rawCodigo.startsWith('FCD')) cat = 'Filtros de Combustible';
+          else if (rawCodigo.startsWith('CF') || rawCodigo.startsWith('CU ') || rawCodigo.startsWith('AKX')) cat = 'Filtros de Habitáculo';
+          else if (rawCodigo.startsWith('KIT')) cat = 'Kits de Filtros';
+          else cat = 'Filtros Varios';
+        }
 
-        return {
+        const isExistente = existingSet.has(rawCodigo);
+
+        parsed.push({
           codigo_filtrar: rawCodigo,
-          titulo_producto: String(row.titulo_producto || row.TITULO_PRODUCTO || row.titulo || row.TITULO || '').trim(),
-          categoria: String(row.categoria || row.CATEGORIA || 'Filtros de Aceite').trim(),
-          marca_filtro: normalizarMarcaCompetidor(String(row.marca_filtro || row.MARCA_FILTRO || row.marca || row.MARCA || 'Pro Filter').trim()),
-          precio: isNaN(numPrecio as number) ? null : numPrecio,
+          titulo_producto: String(row.titulo_producto || row.TITULO_PRODUCTO || row.titulo || row.TITULO || row.descripcion || `Filtro ${rawCodigo}`).trim(),
+          categoria: cat,
+          marca_filtro: normalizarMarcaCompetidor(String(row.marca_filtro || row.MARCA_FILTRO || row.marca || 'Pro Filter').trim()),
+          precio: numPrecio,
           dimensiones: String(row.dimensiones || row.DIMENSIONES || row.medidas || '').trim(),
           descripcion_aplicacion: String(row.descripcion_aplicacion || row.DESCRIPCION_APLICACION || row.aplicacion || '').trim(),
-          equivalencias: finalEquiv,
-          vehiculo_marca: vehClean.marca !== 'GENERAL' ? vehClean.marca : '',
-          vehiculo_modelo: vehClean.modelo !== 'GENERAL' ? vehClean.modelo : '',
-          vehiculo_version: vehClean.version,
-          vehiculo_año: String(row.vehiculo_año || row.VEHICULO_AÑO || row.año || '').trim(),
-          status,
-        };
+          equivalencias: eqFinal,
+          status: isExistente ? 'existente' : 'nuevo',
+        });
       });
 
-      const cleaned: ParsedRow[] = mappedRows.filter((r): r is ParsedRow => r !== null);
-
-      setParsedRows(cleaned);
+      setParsedProductos(parsed);
       setToast({
         id: Date.now().toString(),
         type: 'success',
-        title: 'Planilla Procesada',
-        message: `Se leyeron correctamente ${cleaned.length} productos listos para importar.`,
+        title: 'Planilla de Productos Analizada',
+        message: `Se detectaron ${parsed.length} productos (${parsed.filter(p => p.status === 'nuevo').length} nuevos, ${parsed.filter(p => p.status === 'existente').length} para actualizar).`,
       });
     } catch (err: any) {
-      console.error('Error al leer planilla:', err);
+      console.error('Error leyendo productos:', err);
       setToast({
         id: Date.now().toString(),
         type: 'error',
-        title: 'Error al leer archivo',
-        message: 'Asegurate de subir un archivo .xlsx, .xls o .csv válido.',
+        title: 'Error de Lectura',
+        message: 'No se pudo procesar el archivo. Verificá que sea un formato Excel o CSV válido.',
       });
     } finally {
-      setReadingFile(false);
+      setReadingProductos(false);
     }
   };
 
-  // 3. EJECUTAR LA IMPORTACIÓN MASIVA EN LORTES
-  const handleEjecutarImportacion = async () => {
-    if (parsedRows.length === 0) return;
+  /* ─────────────────────────────────────────────────────────────
+     3. MÓDULO PRODUCTOS: EJECUCIÓN DE LA IMPORTACIÓN
+  ───────────────────────────────────────────────────────────── */
+
+  const handleEjecutarImportacionProductos = async () => {
+    if (parsedProductos.length === 0) return;
 
     setImporting(true);
     setProgress(0);
     setImportLog(null);
 
     const CHUNK_SIZE = 50;
-    const total = parsedRows.length;
-    let processed = 0;
+    const total = parsedProductos.length;
     let insertedCount = 0;
     let updatedCount = 0;
-    let vehiculosCount = 0;
+    let equivsCount = 0;
 
     try {
       for (let i = 0; i < total; i += CHUNK_SIZE) {
-        const chunk = parsedRows.slice(i, i + CHUNK_SIZE);
+        const chunk = parsedProductos.slice(i, i + CHUNK_SIZE);
 
-        // Preparar array de productos para upsert
-        const productosBatch = chunk.map((r) => ({
+        // 1. Preparar lote de productos para upsert
+        const batchProd = chunk.map((r) => ({
           codigo_filtrar: r.codigo_filtrar,
-          codigo_normalizado: r.codigo_filtrar.replace(/[-_/\s]/g, '').toLowerCase(),
+          codigo_normalizado: normalizarCodigoCruza(r.codigo_filtrar),
           titulo_producto: r.titulo_producto || null,
-          categoria: r.categoria || 'Filtros de Aceite',
+          categoria: r.categoria,
           marca_filtro: r.marca_filtro || 'Pro Filter',
           precio: r.precio,
           dimensiones: r.dimensiones || null,
@@ -267,22 +403,21 @@ export default function AdminImportarPage() {
           activo: true,
         }));
 
-        // Upsert en productos_filtrar
-        const { error: errorProd } = await supabase
+        const { error: errP } = await supabase
           .from('productos_filtrar')
-          .upsert(productosBatch, { onConflict: 'codigo_filtrar' });
+          .upsert(batchProd, { onConflict: 'codigo_filtrar' });
 
-        if (errorProd) throw errorProd;
+        if (errP) throw errP;
 
-        // Mapear equivalencias cruzadas estructuradas en equivalencias_cruza
-        const equivalenciasBatch: any[] = [];
+        // 2. Extraer y estructurar equivalencias cruzadas
+        const equivsBatch: any[] = [];
         const chunkCodes = chunk.map((r) => r.codigo_filtrar);
 
         chunk.forEach((r) => {
           if (r.equivalencias) {
-            const itemsEq = sanitizarEquivalenciasTexto(r.equivalencias);
-            itemsEq.forEach((eq) => {
-              equivalenciasBatch.push({
+            const parsedEq = sanitizarEquivalenciasTexto(r.equivalencias);
+            parsedEq.forEach((eq) => {
+              equivsBatch.push({
                 producto_codigo: r.codigo_filtrar,
                 marca_competidor: eq.marca_competidor,
                 codigo_competidor: eq.codigo_competidor,
@@ -292,705 +427,1147 @@ export default function AdminImportarPage() {
           }
         });
 
+        // Limpiar equivalencias previas de los códigos tocados para no acumular basura
         if (chunkCodes.length > 0) {
-          await supabase
-            .from('equivalencias_cruza')
-            .delete()
-            .in('producto_codigo', chunkCodes);
+          await supabase.from('equivalencias_cruza').delete().in('producto_codigo', chunkCodes);
         }
 
-        if (equivalenciasBatch.length > 0) {
-          // Deduplicar dentro del lote para garantizar cumplimiento de uq_equivalencia_cruza
-          const uniqueEquivsMap = new Map<string, any>();
-          equivalenciasBatch.forEach((eq) => {
-            const key = `${eq.producto_codigo}__${eq.marca_competidor}__${eq.codigo_competidor}`;
-            if (!uniqueEquivsMap.has(key)) {
-              uniqueEquivsMap.set(key, eq);
-            }
+        if (equivsBatch.length > 0) {
+          const uniqueEqMap = new Map<string, any>();
+          equivsBatch.forEach((eq) => {
+            const k = `${eq.producto_codigo}__${eq.marca_competidor}__${eq.codigo_competidor}`;
+            if (!uniqueEqMap.has(k)) uniqueEqMap.set(k, eq);
           });
-          const deduplicatedBatch = Array.from(uniqueEquivsMap.values());
+          const deduplicated = Array.from(uniqueEqMap.values());
 
-          await supabase
+          const { error: errEq } = await supabase
             .from('equivalencias_cruza')
-            .upsert(deduplicatedBatch, {
-              onConflict: 'producto_codigo,marca_competidor,codigo_competidor',
-              ignoreDuplicates: true,
-            });
+            .upsert(deduplicated, { onConflict: 'producto_codigo,marca_competidor,codigo_competidor', ignoreDuplicates: true });
+
+          if (!errEq) equivsCount += deduplicated.length;
         }
 
-        // Mapear asociaciones vehiculares si están presentes en la fila
-        const vehiculosBatch: any[] = [];
-        chunk.forEach((r) => {
-          if (r.vehiculo_marca && r.vehiculo_modelo) {
-            vehiculosBatch.push({
-              marca: r.vehiculo_marca,
-              modelo: r.vehiculo_modelo,
-              version: r.vehiculo_version || null,
-              año: r.vehiculo_año || null,
-              filtro_asociado: r.codigo_filtrar,
-            });
-          }
-        });
-
-        if (vehiculosBatch.length > 0) {
-          const { error: errorVeh } = await supabase
-            .from('vehiculos_filtrar')
-            .insert(vehiculosBatch);
-
-          if (!errorVeh) {
-            vehiculosCount += vehiculosBatch.length;
-          }
-        }
-
-        // Conteo de insertados vs actualizados
         chunk.forEach((r) => {
           if (r.status === 'nuevo') insertedCount++;
           else updatedCount++;
         });
 
-        processed += chunk.length;
-        setProgress(Math.round((processed / total) * 100));
+        const currentProgress = Math.min(100, Math.round(((i + chunk.length) / total) * 100));
+        setProgress(currentProgress);
       }
 
-      const summaryText = `¡Importación Masiva Completada! Se procesaron ${processed} repuestos (${insertedCount} nuevos creados, ${updatedCount} existentes actualizados) y ${vehiculosCount} aplicaciones vehiculares vinculadas.`;
+      setImportLog(
+        `✅ Importación de Productos Completada con Éxito:\n` +
+        `• Total procesados: ${total}\n` +
+        `• Productos nuevos registrados: ${insertedCount}\n` +
+        `• Productos existentes actualizados: ${updatedCount}\n` +
+        `• Cruces de equivalencias sincronizados: ${equivsCount}`
+      );
 
-      setImportLog(summaryText);
       setToast({
         id: Date.now().toString(),
         type: 'success',
-        title: 'Importación Exitosa',
-        message: summaryText,
+        title: 'Productos Importados',
+        message: `Se actualizaron ${total} productos y sus equivalencias correctamente.`,
       });
 
-      // Limpiar vista tras importar
-      setParsedRows([]);
-      setFileName(null);
+      setParsedProductos([]);
+      setFileProductos(null);
+      if (fileInputRefProductos.current) fileInputRefProductos.current.value = '';
     } catch (err: any) {
-      console.error('Error al importar:', err);
+      console.error('Error importando productos:', err);
+      setImportLog(`❌ Error durante la importación: ${err.message || 'Error inesperado'}`);
       setToast({
         id: Date.now().toString(),
         type: 'error',
-        title: 'Error durante la importación',
-        message: err.message || 'Ocurrió un fallo al guardar en la base de datos.',
+        title: 'Error en Importación',
+        message: err.message || 'No se pudieron guardar los productos.',
       });
     } finally {
       setImporting(false);
     }
   };
 
-  const nuevosCount = parsedRows.filter((r) => r.status === 'nuevo').length;
-  const existentesCount = parsedRows.filter((r) => r.status === 'existente').length;
+  /* ─────────────────────────────────────────────────────────────
+     4. MÓDULO VEHÍCULOS: PLANTILLAS Y EXPORTACIÓN
+  ───────────────────────────────────────────────────────────── */
+
+  const handleDescargarPlantillaVehiculos = (tipo: 'service' | 'directo', format: 'xlsx' | 'csv') => {
+    let templateData: any[] = [];
+
+    if (tipo === 'service') {
+      templateData = [
+        {
+          marca: 'TOYOTA',
+          modelo: 'HILUX',
+          version: '2.8 TDi',
+          año: '2016-2023',
+          filtro_aire: 'AF-205',
+          filtro_aceite: 'OF-711T',
+          filtro_combustible: 'FF-010',
+          filtro_habitaculo: 'CF-390',
+          tipo_vehiculo: 'LIVIANO',
+        },
+        {
+          marca: 'VOLKSWAGEN',
+          modelo: 'AMAROK',
+          version: '2.0 TDi BiTurbo',
+          año: '2010-2022',
+          filtro_aire: 'AF-198',
+          filtro_aceite: 'OF-719V',
+          filtro_combustible: 'FF-200',
+          filtro_habitaculo: 'CF-198',
+          tipo_vehiculo: 'LIVIANO',
+        },
+        {
+          marca: 'FORD',
+          modelo: 'RANGER',
+          version: '3.2 TDCi',
+          año: '2012-2023',
+          filtro_aire: 'AF-3535',
+          filtro_aceite: 'OF-104',
+          filtro_combustible: 'FF-3535',
+          filtro_habitaculo: 'CF-10430',
+          tipo_vehiculo: 'LIVIANO',
+        },
+        {
+          marca: 'SCANIA',
+          modelo: 'SERIE 4',
+          version: 'R124 / 420',
+          año: '1998-2008',
+          filtro_aire: 'AF-900',
+          filtro_aceite: 'OF-900',
+          filtro_combustible: 'FF-900',
+          filtro_habitaculo: '',
+          tipo_vehiculo: 'PESADO',
+        },
+      ];
+    } else {
+      templateData = [
+        { marca: 'TOYOTA', modelo: 'HILUX', version: '2.8 TDi', año: '2016-2023', codigo_filtro: 'AF-205', tipo_vehiculo: 'LIVIANO' },
+        { marca: 'TOYOTA', modelo: 'HILUX', version: '2.8 TDi', año: '2016-2023', codigo_filtro: 'OF-711T', tipo_vehiculo: 'LIVIANO' },
+        { marca: 'VOLKSWAGEN', modelo: 'AMAROK', version: '2.0 TDi', año: '2010-2022', codigo_filtro: 'OF-719V', tipo_vehiculo: 'LIVIANO' },
+        { marca: 'SCANIA', modelo: 'R124', version: '420', año: '1998-2008', codigo_filtro: 'AF-900', tipo_vehiculo: 'PESADO' },
+      ];
+    }
+
+    const ws = XLSX.utils.json_to_sheet(templateData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, tipo === 'service' ? 'Vehiculos Service' : 'Vehiculos Directo');
+
+    const fileName = tipo === 'service' ? 'plantilla_vehiculos_service_completo' : 'plantilla_vehiculos_directo';
+    if (format === 'xlsx') {
+      XLSX.writeFile(wb, `${fileName}.xlsx`);
+    } else {
+      XLSX.writeFile(wb, `${fileName}.csv`, { bookType: 'csv' });
+    }
+
+    setToast({
+      id: Date.now().toString(),
+      type: 'success',
+      title: 'Plantilla de Vehículos Descargada',
+      message: `Plantilla ${tipo === 'service' ? 'Service Completo (matriz)' : 'Directa'} generada correctamente.`,
+    });
+  };
+
+  const handleExportarVehiculosExcel = async () => {
+    setExporting(true);
+    try {
+      const { data: vehs, error: vErr } = await supabase
+        .from('vehiculos_filtrar')
+        .select('*')
+        .order('marca', { ascending: true })
+        .order('modelo', { ascending: true });
+
+      if (vErr) throw vErr;
+      if (!vehs || vehs.length === 0) {
+        setToast({ id: Date.now().toString(), type: 'error', title: 'Sin datos', message: 'No hay aplicaciones registradas para exportar.' });
+        return;
+      }
+
+      const rows = vehs.map((v) => ({
+        marca: v.marca || '',
+        modelo: v.modelo || '',
+        version: v.version || '',
+        año: v.año || '',
+        filtro_asociado: v.filtro_asociado || '',
+        tipo_vehiculo: v.tipo_vehiculo || 'LIVIANO',
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Aplicaciones Vehiculares');
+
+      const fecha = new Date().toISOString().split('T')[0];
+      XLSX.writeFile(wb, `aplicaciones_vehiculos_filtrar_${fecha}.xlsx`);
+
+      setToast({
+        id: Date.now().toString(),
+        type: 'success',
+        title: 'Aplicaciones Exportadas',
+        message: `Se descargaron ${rows.length} compatibilidades vehiculares en Excel.`,
+      });
+    } catch (err: any) {
+      console.error('Error exportando vehículos:', err);
+      setToast({
+        id: Date.now().toString(),
+        type: 'error',
+        title: 'Error en Exportación',
+        message: err.message || 'No se pudo generar el archivo de vehículos.',
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  /* ─────────────────────────────────────────────────────────────
+     5. MÓDULO VEHÍCULOS: LECTURA, VERIFICACIÓN DE SIMILITUD Y DEDUPLICACIÓN
+  ───────────────────────────────────────────────────────────── */
+
+  const handleFileVehiculosChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setFileVehiculos(file);
+    setReadingVehiculos(true);
+    setImportLog(null);
+    setPreviewPageVeh(1);
+
+    try {
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      const rawRows: any[] = XLSX.utils.sheet_to_json(worksheet);
+
+      if (rawRows.length === 0) {
+        setToast({
+          id: Date.now().toString(),
+          type: 'error',
+          title: 'Planilla Vacía',
+          message: 'No se encontraron filas en la planilla de vehículos.',
+        });
+        setReadingVehiculos(false);
+        return;
+      }
+
+      // Obtener firmas de compatibilidades existentes para deduplicación exacta
+      const { data: dbVehs } = await supabase
+        .from('vehiculos_filtrar')
+        .select('*');
+
+      const existingSignatures = new Set<string>();
+      (dbVehs || []).forEach((v: any) => {
+        const sig = `${(v.marca || '').toUpperCase()}__${(v.modelo || '').toUpperCase()}__${(v.version || '').toUpperCase()}__${(v.año || '').toUpperCase()}__${(v.filtro_asociado || '').toUpperCase()}`;
+        existingSignatures.add(sig);
+      });
+
+      const parsed: ParsedVehiculoRow[] = [];
+
+      // Detectar si la planilla tiene formato "Service Completo" (columnas de filtros específicos)
+      const firstRow = rawRows[0] || {};
+      const keys = Object.keys(firstRow).map((k) => k.toLowerCase().replace(/[-_]/g, ''));
+      const isServiceMatrix = keys.some((k) =>
+        ['filtroaire', 'aire', 'filtroaceite', 'aceite', 'filtrocombustible', 'combustible', 'filtrohabitaculo', 'habitaculo'].includes(k)
+      );
+
+      rawRows.forEach((row) => {
+        const marcaRaw = String(row.marca || row.MARCA || row.Marca || '').trim();
+        const modeloRaw = String(row.modelo || row.MODELO || row.Modelo || '').trim();
+        if (!marcaRaw || !modeloRaw) return;
+
+        // 1. Sanitizar marca y modelo
+        const marcaClean = normalizarMarcaVehiculo(marcaRaw);
+        let modeloClean = modeloRaw.toUpperCase().trim();
+        let versionClean = String(row.version || row.VERSION || row.Version || '').trim();
+        const añoClean = String(row.año || row.ano || row.AÑO || row.ANO || row.anio || row.Año || '').trim();
+
+        // Eliminar prefijo de marca en modelo si vino repetido (ej: "TOYOTA Hilux" -> "Hilux")
+        if (modeloClean.startsWith(`${marcaClean} `)) {
+          modeloClean = modeloClean.slice(marcaClean.length).trim();
+        }
+
+        // 2. Detección de modelo similar y estandarización inteligente
+        let statusModelo: 'nuevo' | 'similar_estandarizado' = 'nuevo';
+        let modeloFinal = modeloClean;
+
+        if (autoEstandarizarModelos) {
+          const { baseModel, subVersion } = normalizarModeloBase(modeloClean);
+          if (baseModel && baseModel !== 'GENERAL' && baseModel !== modeloClean) {
+            modeloFinal = baseModel;
+            statusModelo = 'similar_estandarizado';
+            if (subVersion && !versionClean.includes(subVersion)) {
+              versionClean = versionClean ? `${versionClean} (${subVersion})` : subVersion;
+            }
+          }
+        }
+
+        // 3. Clasificación de tipo de vehículo
+        const tipoInput = String(row.tipo_vehiculo || row.tipo || row.TIPO || '').toUpperCase().trim();
+        const tipoVehiculo: 'LIVIANO' | 'PESADO' =
+          tipoInput === 'PESADO' || tipoInput === 'LIVIANO'
+            ? tipoInput
+            : classifyVehicleType(marcaClean, modeloFinal);
+
+        // 4. Extracción de filtros asociados
+        const itemsToCreate: { filtro: string; categoria: string }[] = [];
+
+        if (isServiceMatrix) {
+          // Extraer las 4 columnas de service
+          const aire = String(row.filtro_aire || row.aire || row.FILTRO_AIRE || row.AIRE || '').trim().toUpperCase();
+          const aceite = String(row.filtro_aceite || row.aceite || row.FILTRO_ACEITE || row.ACEITE || '').trim().toUpperCase();
+          const combustible = String(row.filtro_combustible || row.combustible || row.FILTRO_COMBUSTIBLE || row.COMBUSTIBLE || '').trim().toUpperCase();
+          const habitaculo = String(row.filtro_habitaculo || row.habitaculo || row.FILTRO_HABITACULO || row.HABITACULO || '').trim().toUpperCase();
+
+          if (aire) itemsToCreate.push({ filtro: aire, categoria: 'Aire' });
+          if (aceite) itemsToCreate.push({ filtro: aceite, categoria: 'Aceite' });
+          if (combustible) itemsToCreate.push({ filtro: combustible, categoria: 'Combustible' });
+          if (habitaculo) itemsToCreate.push({ filtro: habitaculo, categoria: 'Habitáculo' });
+        } else {
+          // Formato directo 1 a 1
+          const codDirecto = String(
+            row.codigo_filtro || row.filtro_asociado || row.filtro || row.CODIGO_FILTRO || row.FILTRO || ''
+          ).trim().toUpperCase();
+
+          if (codDirecto) {
+            itemsToCreate.push({ filtro: codDirecto, categoria: 'Filtro' });
+          }
+        }
+
+        // 5. Verificar duplicados por cada filtro
+        itemsToCreate.forEach((item) => {
+          const sig = `${marcaClean}__${modeloFinal}__${versionClean.toUpperCase()}__${añoClean.toUpperCase()}__${item.filtro}`;
+          const isDuplicado = existingSignatures.has(sig);
+
+          let finalStatus: 'nuevo' | 'similar_estandarizado' | 'duplicado_omitido' = statusModelo;
+          let motivo = undefined;
+
+          if (isDuplicado) {
+            finalStatus = 'duplicado_omitido';
+            motivo = 'Aplicación ya existente en la base de datos (se omite para no duplicar).';
+          } else if (statusModelo === 'similar_estandarizado') {
+            motivo = `Modelo unificado a "${modeloFinal}" (original era "${modeloRaw}").`;
+          }
+
+          parsed.push({
+            marca: marcaClean,
+            modelo: modeloFinal,
+            modeloOriginal: modeloRaw,
+            version: versionClean,
+            año: añoClean,
+            filtro_asociado: item.filtro,
+            tipo_vehiculo: tipoVehiculo,
+            categoria_filtro: item.categoria,
+            status: finalStatus,
+            motivo_status: motivo,
+          });
+        });
+      });
+
+      setParsedVehiculos(parsed);
+
+      const countNuevos = parsed.filter((v) => v.status === 'nuevo').length;
+      const countSimilares = parsed.filter((v) => v.status === 'similar_estandarizado').length;
+      const countOmitidos = parsed.filter((v) => v.status === 'duplicado_omitido').length;
+
+      setToast({
+        id: Date.now().toString(),
+        type: 'success',
+        title: 'Planilla de Vehículos Analizada',
+        message: `Se detectaron ${parsed.length} asociaciones (${countNuevos} nuevas, ${countSimilares} similares unificados, ${countOmitidos} omitidos por duplicado).`,
+      });
+    } catch (err: any) {
+      console.error('Error leyendo vehículos:', err);
+      setToast({
+        id: Date.now().toString(),
+        type: 'error',
+        title: 'Error de Lectura',
+        message: 'No se pudo procesar la planilla de vehículos. Verificá los nombres de las columnas.',
+      });
+    } finally {
+      setReadingVehiculos(false);
+    }
+  };
+
+  /* ─────────────────────────────────────────────────────────────
+     6. MÓDULO VEHÍCULOS: EJECUCIÓN DE LA IMPORTACIÓN
+  ───────────────────────────────────────────────────────────── */
+
+  const handleEjecutarImportacionVehiculos = async () => {
+    // Filtrar solo las filas que no son omitidas (o todas si no se omiten duplicados)
+    const toInsert = parsedVehiculos.filter((v) => (omitirDuplicadosVeh ? v.status !== 'duplicado_omitido' : true));
+
+    if (toInsert.length === 0) {
+      setToast({
+        id: Date.now().toString(),
+        type: 'error',
+        title: 'Nada para Importar',
+        message: 'Todas las aplicaciones leídas ya existen en la base de datos.',
+      });
+      return;
+    }
+
+    setImporting(true);
+    setProgress(0);
+    setImportLog(null);
+
+    const CHUNK_SIZE = 100;
+    const total = toInsert.length;
+    let insertedCount = 0;
+
+    try {
+      for (let i = 0; i < total; i += CHUNK_SIZE) {
+        const chunk = toInsert.slice(i, i + CHUNK_SIZE);
+
+        const batch = chunk.map((v) => ({
+          marca: v.marca,
+          modelo: v.modelo,
+          version: v.version || null,
+          año: v.año || null,
+          filtro_asociado: v.filtro_asociado,
+          tipo_vehiculo: v.tipo_vehiculo,
+        }));
+
+        const { error: vErr } = await supabase.from('vehiculos_filtrar').insert(batch);
+        if (vErr) throw vErr;
+
+        insertedCount += chunk.length;
+        const currentProgress = Math.min(100, Math.round(((i + chunk.length) / total) * 100));
+        setProgress(currentProgress);
+      }
+
+      setImportLog(
+        `✅ Importación de Vehículos Completada:\n` +
+        `• Total aplicaciones procesadas: ${total}\n` +
+        `• Nuevas asociaciones registradas: ${insertedCount}\n` +
+        `• Omitidas por duplicado: ${parsedVehiculos.length - toInsert.length}`
+      );
+
+      setToast({
+        id: Date.now().toString(),
+        type: 'success',
+        title: 'Vehículos Importados',
+        message: `Se registraron ${insertedCount} compatibilidades vehiculares exitosamente.`,
+      });
+
+      setParsedVehiculos([]);
+      setFileVehiculos(null);
+      if (fileInputRefVehiculos.current) fileInputRefVehiculos.current.value = '';
+    } catch (err: any) {
+      console.error('Error importando vehículos:', err);
+      setImportLog(`❌ Error durante la importación de vehículos: ${err.message || 'Error inesperado'}`);
+      setToast({
+        id: Date.now().toString(),
+        type: 'error',
+        title: 'Error en Importación',
+        message: err.message || 'No se pudieron registrar las aplicaciones vehiculares.',
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  /* ─────────────────────────────────────────────────────────────
+     RENDER PRINCIPAL
+  ───────────────────────────────────────────────────────────── */
+
+  const ITEMS_PER_PAGE = 15;
+  const paginatedProductos = useMemo(() => {
+    const start = (previewPageProd - 1) * ITEMS_PER_PAGE;
+    return parsedProductos.slice(start, start + ITEMS_PER_PAGE);
+  }, [parsedProductos, previewPageProd]);
+
+  const paginatedVehiculos = useMemo(() => {
+    const start = (previewPageVeh - 1) * ITEMS_PER_PAGE;
+    return parsedVehiculos.slice(start, start + ITEMS_PER_PAGE);
+  }, [parsedVehiculos, previewPageVeh]);
 
   return (
-    <div className="space-y-8 max-w-7xl">
-      {/* HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/admin/productos"
-            className="p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
-              <FileSpreadsheet className="w-6 h-6 text-emerald-400" />
-              <span>IMPORTACIÓN MASIVA DESDE EXCEL / CSV</span>
-            </h1>
-            <p className="text-xs font-semibold text-slate-400 mt-0.5">
-              Cargá cientos de productos en segundos mediante planillas de Excel o Google Sheets.
-            </p>
+    <div className="space-y-6">
+      <AdminToast toast={toast} onClose={() => setToast(null)} />
+
+      {/* HEADER & VOLVER */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800/80">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 mb-1">
+            <Link href="/admin" className="hover:text-white flex items-center gap-1 transition-colors">
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Volver al Dashboard</span>
+            </Link>
+            <span>/</span>
+            <span className="text-blue-400 font-bold">Importación & Exportación</span>
           </div>
+
+          <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
+            <FileSpreadsheet className="w-6 h-6 text-emerald-400" />
+            <span>Módulo de Importación Masiva Excel</span>
+          </h1>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Carga masiva, actualización de precios y compatibilidades separadas por entidad.
+          </p>
         </div>
 
-        {/* BOTONES DESCARGAR PLANTILLA */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => handleDescargarPlantilla('xlsx')}
-            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-white font-extrabold text-xs rounded-lg flex items-center gap-2 transition-all shadow-sm active:scale-95"
-          >
-            <Download className="w-4 h-4 text-emerald-400" />
-            <span>Descargar Plantilla (.XLSX)</span>
-          </button>
-
-          <button
-            onClick={() => handleDescargarPlantilla('csv')}
-            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-white font-extrabold text-xs rounded-lg flex items-center gap-2 transition-all shadow-sm active:scale-95"
-          >
-            <Download className="w-4 h-4 text-blue-400" />
-            <span>Plantilla (.CSV)</span>
-          </button>
-        </div>
+        {/* BOTÓN TOGGLE GUÍA / FAQ */}
+        <button
+          onClick={() => setTutorialOpen(!tutorialOpen)}
+          className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 text-xs font-semibold text-slate-300 hover:text-white transition-colors"
+        >
+          <HelpCircle className="w-4 h-4 text-sky-400" />
+          <span>{tutorialOpen ? 'Ocultar Guía' : 'Ver Guía de Columnas'}</span>
+        </button>
       </div>
 
-      {/* RESULTADO PREVIO LOG */}
-      {importLog && (
-        <div className="bg-emerald-950/40 border border-emerald-800/80 rounded-xl p-5 text-emerald-200 flex items-center gap-4 animate-fade-in shadow-xl">
-          <div className="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-6 h-6" />
+      {/* GUÍA DE COLUMNAS COLAPSABLE */}
+      {tutorialOpen && (
+        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 space-y-4 shadow-sm animate-fadeIn">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <Info className="w-4 h-4 text-blue-400" />
+              <span>Instrucciones y Formato de Planillas</span>
+            </h3>
+            <button onClick={() => setTutorialOpen(false)} className="text-slate-500 hover:text-slate-300">
+              <X className="w-4 h-4" />
+            </button>
           </div>
-          <div>
-            <h3 className="text-sm font-black text-white">Resultado del Proceso</h3>
-            <p className="text-xs font-semibold text-emerald-300/90 mt-0.5 leading-relaxed">{importLog}</p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-300 leading-relaxed">
+            <div className="bg-slate-950 p-4 rounded-lg border border-slate-800/80 space-y-2">
+              <div className="font-bold text-sky-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                <Boxes className="w-3.5 h-3.5" />
+                <span>Pestaña 1: Productos y Precios</span>
+              </div>
+              <p className="text-slate-400">
+                Usá esta pestaña para dar de alta repuestos, actualizar listas de precios o sincronizar equivalencias.
+              </p>
+              <ul className="list-disc pl-4 space-y-1 text-slate-400">
+                <li><strong className="text-slate-200">codigo_filtrar:</strong> Código único obligatorio (ej: <code>AF-205</code>).</li>
+                <li><strong className="text-slate-200">precio:</strong> Valor numérico en pesos (ej: <code>14500</code>).</li>
+                <li><strong className="text-slate-200">equivalencias:</strong> Puede ir en una sola columna con marcas (<code>WEGA: WO-180 | MANN: W712</code>) o en columnas separadas (<code>wega</code>, <code>mann</code>, <code>fram</code>, <code>oem</code>, <code>mareno</code>).</li>
+              </ul>
+            </div>
+
+            <div className="bg-slate-950 p-4 rounded-lg border border-slate-800/80 space-y-2">
+              <div className="font-bold text-violet-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                <Car className="w-3.5 h-3.5" />
+                <span>Pestaña 2: Aplicaciones de Vehículos</span>
+              </div>
+              <p className="text-slate-400">
+                Usá esta pestaña para asignar qué filtros lleva cada modelo de auto, utilitario o camión.
+              </p>
+              <ul className="list-disc pl-4 space-y-1 text-slate-400">
+                <li><strong className="text-slate-200">Formato Service Completo:</strong> Una sola fila con <code>filtro_aire</code>, <code>filtro_aceite</code>, <code>filtro_combustible</code> y <code>filtro_habitaculo</code> crea el juego completo.</li>
+                <li><strong className="text-slate-200">Detección de Similares:</strong> Si cargás <code>Hilux 2.8</code>, el sistema sugiere normalizar el modelo a <code>HILUX</code> y mover la motorización a la versión para no fragmentar el catálogo.</li>
+                <li><strong className="text-slate-200">Cero Duplicados:</strong> Si el filtro ya estaba asociado a ese modelo, se omite automáticamente.</li>
+              </ul>
+            </div>
           </div>
         </div>
       )}
 
-      {/* TUTORIAL EXTENSO DE IMPORTACIÓN */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl transition-all">
-        {/* TUTORIAL HEADER */}
-        <div className="p-6 bg-slate-950/80 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400">
-              <BookOpen className="w-6 h-6" />
+      {/* SEGMENTED TAB NAVIGATION */}
+      <div className="flex items-center gap-2 p-1.5 bg-slate-900 border border-slate-800 rounded-xl max-w-xl">
+        <button
+          onClick={() => {
+            setActiveTab('productos');
+            setImportLog(null);
+          }}
+          className={`flex-1 flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-lg text-xs font-bold transition-all ${
+            activeTab === 'productos'
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-900/30'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+          }`}
+        >
+          <Boxes className="w-4 h-4" />
+          <span>1. Productos y Precios</span>
+          {parsedProductos.length > 0 && (
+            <span className="bg-blue-500/30 text-sky-200 text-[10px] px-2 py-0.5 rounded-full font-mono">
+              {parsedProductos.length}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => {
+            setActiveTab('vehiculos');
+            setImportLog(null);
+          }}
+          className={`flex-1 flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-lg text-xs font-bold transition-all ${
+            activeTab === 'vehiculos'
+              ? 'bg-violet-600 text-white shadow-md shadow-violet-900/30'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+          }`}
+        >
+          <Car className="w-4 h-4" />
+          <span>2. Aplicaciones de Vehículos</span>
+          {parsedVehiculos.length > 0 && (
+            <span className="bg-violet-500/30 text-violet-200 text-[10px] px-2 py-0.5 rounded-full font-mono">
+              {parsedVehiculos.length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* LOG DE RESULTADOS (SI EXISTE) */}
+      {importLog && (
+        <div className="bg-slate-900 border border-slate-700/80 rounded-xl p-4 shadow-lg animate-fadeIn">
+          <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+            <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span>Reporte de Ejecución</span>
+            </span>
+            <button onClick={() => setImportLog(null)} className="text-slate-400 hover:text-white text-xs">
+              ✕ Cerrar
+            </button>
+          </div>
+          <pre className="text-xs font-mono text-slate-300 whitespace-pre-wrap leading-relaxed">
+            {importLog}
+          </pre>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+         CONTENIDO PESTAÑA 1: PRODUCTOS Y PRECIOS
+      ───────────────────────────────────────────────────────────── */}
+      {activeTab === 'productos' && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* BARRA SUPERIOR DE ACCIONES */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-300">Plantillas Modelo:</span>
+              <button
+                onClick={() => handleDescargarPlantillaProductos('xlsx')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-200 hover:text-white border border-slate-700 text-xs font-semibold transition-colors"
+              >
+                <Download className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Descargar Plantilla (.xlsx)</span>
+              </button>
             </div>
-            <div>
-              <h2 className="text-base font-black text-white tracking-tight flex items-center gap-2">
-                <span>GUÍA COMPLETA Y TUTORIAL DE IMPORTACIÓN</span>
-                <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-mono font-extrabold uppercase px-2.5 py-0.5 rounded-full">
-                  Paso a Paso
-                </span>
-              </h2>
-              <p className="text-xs font-semibold text-slate-400 mt-0.5">
-                Aprendé a estructurar tu archivo de Excel o CSV para cargar o actualizar cientos de datos sin errores.
-              </p>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleExportarProductosExcel}
+                disabled={exporting}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold transition-colors disabled:opacity-50"
+              >
+                {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileSpreadsheet className="w-3.5 h-3.5" />}
+                <span>Exportar Catálogo a Excel</span>
+              </button>
             </div>
           </div>
 
-          <button
-            onClick={() => setTutorialOpen(!tutorialOpen)}
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white font-extrabold text-xs rounded-xl flex items-center gap-2 transition-all shrink-0 self-start sm:self-auto"
-          >
-            <span>{tutorialOpen ? 'Ocultar Tutorial' : 'Ver Tutorial Completo'}</span>
-            {tutorialOpen ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-          </button>
-        </div>
+          {/* DROPZONE CARGA DE ARCHIVO */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-6 shadow-sm">
+            <input
+              ref={fileInputRefProductos}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={handleFileProductosChange}
+              className="hidden"
+              id="upload-productos-input"
+            />
 
-        {/* TUTORIAL BODY (EXPANDABLE) */}
-        {tutorialOpen && (
-          <div className="p-6 space-y-6 animate-fade-in">
-            {/* TABS NAVEGACIÓN TUTORIAL */}
-            <div className="flex items-center gap-2 border-b border-slate-800 pb-3 overflow-x-auto no-scrollbar">
-              <button
-                onClick={() => setActiveTutorialTab('pasos')}
-                className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 shrink-0 ${
-                  activeTutorialTab === 'pasos'
-                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                }`}
+            {!fileProductos ? (
+              <label
+                htmlFor="upload-productos-input"
+                className="border-2 border-dashed border-slate-700/80 hover:border-blue-500/60 bg-slate-950/60 hover:bg-slate-950 rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all group text-center"
               >
-                <ListChecks className="w-4 h-4" />
-                <span>1. Paso a Paso (Guía Rápida)</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTutorialTab('columnas')}
-                className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 shrink-0 ${
-                  activeTutorialTab === 'columnas'
-                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                }`}
-              >
-                <FileSpreadsheet className="w-4 h-4" />
-                <span>2. Columnas Aceptadas</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTutorialTab('equivalencias')}
-                className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 shrink-0 ${
-                  activeTutorialTab === 'equivalencias'
-                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                }`}
-              >
-                <RefreshCw className="w-4 h-4" />
-                <span>3. Formato Equivalencias & Vehículos</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTutorialTab('faq')}
-                className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 shrink-0 ${
-                  activeTutorialTab === 'faq'
-                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                }`}
-              >
-                <HelpCircle className="w-4 h-4" />
-                <span>4. Preguntas Frecuentes (FAQ)</span>
-              </button>
-            </div>
-
-            {/* TAB 1: PASOS SENCILLOS Y RÁPIDOS */}
-            {activeTutorialTab === 'pasos' && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 animate-fade-in">
-                {/* PASO 1 */}
-                <div className="bg-slate-950 p-6 rounded-xl border border-slate-800 space-y-4 relative overflow-hidden group hover:border-emerald-500/50 transition-all">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono font-black flex items-center justify-center text-base">
-                      1
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
-                      Paso Inicial
-                    </span>
-                  </div>
-                  <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                    <Download className="w-4 h-4 text-emerald-400" />
-                    <span>Descargá la Plantilla Modelo</span>
-                  </h3>
-                  <p className="text-xs text-slate-300 font-medium leading-relaxed">
-                    Hacé clic en <strong className="text-white">Descargar Plantilla (.XLSX)</strong> arriba. El archivo viene listo con los encabezados exactos que requiere el sistema.
-                  </p>
-                  <div className="flex items-center gap-2 pt-1">
-                    <button
-                      onClick={() => handleDescargarPlantilla('xlsx')}
-                      className="px-3.5 py-2 bg-emerald-600/20 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-600 hover:text-white rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>Bajar Excel Modelo (.xlsx)</span>
-                    </button>
-                  </div>
+                <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Upload className="w-6 h-6" />
                 </div>
-
-                {/* PASO 2 */}
-                <div className="bg-slate-950 p-6 rounded-xl border border-slate-800 space-y-4 relative overflow-hidden group hover:border-sky-500/50 transition-all">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-400 font-mono font-black flex items-center justify-center text-base">
-                      2
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2.5 py-1 rounded-full">
-                      Carga de Repuestos
-                    </span>
-                  </div>
-                  <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-sky-400" />
-                    <span>Llená tus Repuestos en Excel</span>
-                  </h3>
-                  <p className="text-xs text-slate-300 font-medium leading-relaxed">
-                    Completá los datos de tus repuestos. El único campo obligatorio es <strong className="text-amber-300 font-mono">codigo_filtrar</strong> (ej: <code className="text-white bg-slate-900 px-1 rounded">AF-205</code>).
-                  </p>
-                  <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-[11px] text-slate-400 font-mono">
-                    <span className="text-sky-300 font-bold">Opcionales:</span> titulo, categoria, marca, precio, equivalencias, vehiculo.
-                  </div>
-                </div>
-
-                {/* PASO 3 */}
-                <div className="bg-slate-950 p-6 rounded-xl border border-slate-800 space-y-4 relative overflow-hidden group hover:border-purple-500/50 transition-all">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 font-mono font-black flex items-center justify-center text-base">
-                      3
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2.5 py-1 rounded-full">
-                      Publicar en la Web
-                    </span>
-                  </div>
-                  <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                    <Upload className="w-4 h-4 text-purple-400" />
-                    <span>Arrastrá y Confirmá</span>
-                  </h3>
-                  <p className="text-xs text-slate-300 font-medium leading-relaxed">
-                    Soltá el archivo en el recuadro de abajo. Verás una tabla de previsualización para revisar los datos antes de guardarlos. Si un código ya existe, <strong className="text-emerald-400">se actualizará automáticamente</strong>.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 2: COLUMNAS ACEPTADAS */}
-            {activeTutorialTab === 'columnas' && (
-              <div className="space-y-4 animate-fade-in">
-                <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 flex items-center gap-3 text-xs text-slate-300">
-                  <Info className="w-5 h-5 text-sky-400 shrink-0" />
-                  <span>
-                    El sistema es inteligente y reconoce variaciones en los nombres de las cabeceras (mayúsculas, minúsculas o inglés). A continuación se detallan las columnas compatibles:
+                <div>
+                  <span className="text-sm font-bold text-white group-hover:text-blue-300 block">
+                    Seleccioná o arrastrá tu planilla de Productos (.xlsx / .csv)
+                  </span>
+                  <span className="text-xs text-slate-400 mt-1 block">
+                    Admite códigos, precios, medidas, marcas y columnas de equivalencias multimarca.
                   </span>
                 </div>
-
-                <div className="border border-slate-800 rounded-lg overflow-hidden bg-slate-950">
-                  <div className="max-h-72 overflow-y-auto custom-scrollbar">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-900 text-slate-400 uppercase text-[10px] font-black tracking-wider sticky top-0 border-b border-slate-800">
-                        <tr>
-                          <th className="p-3">Nombre Recomendado</th>
-                          <th className="p-3">Nombres Alternativos Aceptados</th>
-                          <th className="p-3">Requerido</th>
-                          <th className="p-3">Tipo de Dato & Ejemplo</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-800/60 font-medium text-slate-300">
-                        <tr className="hover:bg-slate-900/50">
-                          <td className="p-3 font-mono font-black text-amber-400">codigo_filtrar</td>
-                          <td className="p-3 font-mono text-[11px] text-slate-400">codigo, code, sku, id_producto</td>
-                          <td className="p-3">
-                            <span className="px-2 py-0.5 bg-red-500/20 text-red-400 border border-red-500/30 rounded text-[10px] font-black">
-                              SI (OBLIGATORIO)
-                            </span>
-                          </td>
-                          <td className="p-3">Texto (ej: <code className="text-white bg-slate-900 px-1 rounded">AF-205</code>, <code className="text-white bg-slate-900 px-1 rounded">KIT-01</code>)</td>
-                        </tr>
-
-                        <tr className="hover:bg-slate-900/50">
-                          <td className="p-3 font-mono font-black text-emerald-400">titulo_producto</td>
-                          <td className="p-3 font-mono text-[11px] text-slate-400">titulo, title, nombre, producto</td>
-                          <td className="p-3 text-slate-500 font-semibold">Opcional</td>
-                          <td className="p-3">Texto (ej: <code className="text-white bg-slate-900 px-1 rounded">Filtro de Aire Toyota Hilux 2.8</code>)</td>
-                        </tr>
-
-                        <tr className="hover:bg-slate-900/50">
-                          <td className="p-3 font-mono font-black text-emerald-400">categoria</td>
-                          <td className="p-3 font-mono text-[11px] text-slate-400">category, tipo, rubro</td>
-                          <td className="p-3 text-slate-500 font-semibold">Opcional</td>
-                          <td className="p-3">Texto (Filtros de Aire, Aceite, Combustible, Habitáculo, Kits)</td>
-                        </tr>
-
-                        <tr className="hover:bg-slate-900/50">
-                          <td className="p-3 font-mono font-black text-emerald-400">marca_filtro</td>
-                          <td className="p-3 font-mono text-[11px] text-slate-400">marca, brand, fabricante</td>
-                          <td className="p-3 text-slate-500 font-semibold">Opcional</td>
-                          <td className="p-3">Texto (ej: <code className="text-white bg-slate-900 px-1 rounded">Pro Filter</code>, <code className="text-white bg-slate-900 px-1 rounded">Maxfil</code>, <code className="text-white bg-slate-900 px-1 rounded">MDH</code>, <code className="text-white bg-slate-900 px-1 rounded">Picborg</code>, <code className="text-white bg-slate-900 px-1 rounded">Wega</code>)</td>
-                        </tr>
-
-                        <tr className="hover:bg-slate-900/50">
-                          <td className="p-3 font-mono font-black text-emerald-400">precio</td>
-                          <td className="p-3 font-mono text-[11px] text-slate-400">precio_ars, price, importe, valor</td>
-                          <td className="p-3 text-slate-500 font-semibold">Opcional</td>
-                          <td className="p-3">Número (ej: <code className="text-white bg-slate-900 px-1 rounded">14500</code> - Sin signos $ ni puntos)</td>
-                        </tr>
-
-                        <tr className="hover:bg-slate-900/50">
-                          <td className="p-3 font-mono font-black text-emerald-400">dimensiones</td>
-                          <td className="p-3 font-mono text-[11px] text-slate-400">medidas, dimensions, tamano</td>
-                          <td className="p-3 text-slate-500 font-semibold">Opcional</td>
-                          <td className="p-3">Texto (ej: <code className="text-white bg-slate-900 px-1 rounded">DE: 76mm | DI: 71mm | Alt: 123mm</code>)</td>
-                        </tr>
-
-                        <tr className="hover:bg-slate-900/50">
-                          <td className="p-3 font-mono font-black text-emerald-400">descripcion_aplicacion</td>
-                          <td className="p-3 font-mono text-[11px] text-slate-400">descripcion, aplicacion, detalle</td>
-                          <td className="p-3 text-slate-500 font-semibold">Opcional</td>
-                          <td className="p-3">Texto largo (ej: <code className="text-white bg-slate-900 px-1 rounded">Compatible con Toyota Hilux 2.8 2016+</code>)</td>
-                        </tr>
-
-                        <tr className="hover:bg-slate-900/50">
-                          <td className="p-3 font-mono font-black text-sky-400">equivalencias</td>
-                          <td className="p-3 font-mono text-[11px] text-slate-400">cruces, equivalencias_texto, cruza</td>
-                          <td className="p-3 text-slate-500 font-semibold">Opcional</td>
-                          <td className="p-3">Texto estructurado (ej: <code className="text-white bg-slate-900 px-1 rounded">WEGA: JFA-0205 | MANN: C24005</code>)</td>
-                        </tr>
-
-                        <tr className="hover:bg-slate-900/50">
-                          <td className="p-3 font-mono font-black text-sky-400">vehiculo_marca / modelo</td>
-                          <td className="p-3 font-mono text-[11px] text-slate-400">auto_marca, auto_modelo, marca_vehiculo</td>
-                          <td className="p-3 text-slate-500 font-semibold">Opcional</td>
-                          <td className="p-3">Texto (ej: <code className="text-white bg-slate-900 px-1 rounded">TOYOTA</code> / <code className="text-white bg-slate-900 px-1 rounded">HILUX</code>)</td>
-                        </tr>
-                      </tbody>
-                    </table>
+              </label>
+            ) : (
+              <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center shrink-0">
+                    <FileSpreadsheet className="w-5 h-5" />
                   </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 3: FORMATO DE EQUIVALENCIAS Y VEHÍCULOS */}
-            {activeTutorialTab === 'equivalencias' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
-                {/* EQUIVALENCIAS CARD */}
-                <div className="bg-slate-950 p-5 rounded-lg border border-slate-800 space-y-4">
-                  <div className="flex items-center gap-2 text-sky-400 text-xs font-black uppercase tracking-wider">
-                    <RefreshCw className="w-4 h-4" />
-                    <span>Carga de Equivalencias Cruzadas</span>
-                  </div>
-
-                  <p className="text-xs text-slate-300 leading-relaxed font-semibold">
-                    Podés cargar los cruces con marcas competidoras de dos maneras en la planilla:
-                  </p>
-
-                  <div className="space-y-3">
-                    <div className="bg-slate-900 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[11px] font-black text-emerald-400 block mb-1">Opción A: Columna Combinada ("equivalencias")</span>
-                      <p className="text-[11px] text-slate-400 font-mono bg-slate-950 p-2 rounded border border-slate-800 text-amber-300">
-                        WEGA: WO-180, MANN: W712/95, FRAM: PH5803  ó  WO-180 / W712/95
-                      </p>
-                      <span className="text-[10px] text-slate-500 block mt-1">Usá comas (,), punto y coma (;), o la barra / para separar. ¡No se necesita la barrita vertical (|)!</span>
-                    </div>
-
-                    <div className="bg-slate-900 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[11px] font-black text-sky-400 block mb-1">Opción B: Columnas Dedicadas por Marca</span>
-                      <p className="text-[11px] text-slate-400 font-mono bg-slate-950 p-2 rounded border border-slate-800 text-slate-300">
-                        wega_codigo, mann_codigo, fram_codigo, oem_codigo
-                      </p>
-                      <span className="text-[10px] text-slate-500 block mt-1">Podés agregar columnas específicas con el código directo de cada marca competidora.</span>
-                    </div>
-                  </div>
-
-                  <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-[11px] text-emerald-300 font-semibold flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-400" />
-                    <span>Motor Anti-Errores de Tipeo: Corregirá erratas automáticamente (ej: <code className="text-white">mann-filter</code> ➔ <code className="text-white">Mann</code>, <code className="text-white">W 610/3</code> ➔ <code className="text-white">w6103</code>).</span>
+                  <div>
+                    <h4 className="text-xs font-bold text-white tracking-tight">{fileProductos.name}</h4>
+                    <span className="text-[11px] text-slate-400">
+                      {(fileProductos.size / 1024).toFixed(1)} KB · {parsedProductos.length} filas analizadas
+                    </span>
                   </div>
                 </div>
 
-                {/* VEHÍCULOS CARD */}
-                <div className="bg-slate-950 p-5 rounded-lg border border-slate-800 space-y-4">
-                  <div className="flex items-center gap-2 text-purple-400 text-xs font-black uppercase tracking-wider">
-                    <Car className="w-4 h-4" />
-                    <span>Asociación a Vehículos y Aplicaciones</span>
-                  </div>
+                <div className="flex items-center gap-2 self-end sm:self-auto">
+                  <button
+                    onClick={() => {
+                      setFileProductos(null);
+                      setParsedProductos([]);
+                      if (fileInputRefProductos.current) fileInputRefProductos.current.value = '';
+                    }}
+                    disabled={importing}
+                    className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 text-xs font-semibold border border-slate-700 transition-colors"
+                  >
+                    Cambiar Archivo
+                  </button>
 
-                  <p className="text-xs text-slate-300 leading-relaxed font-semibold">
-                    Si deseás que el producto aparezca en el buscador inteligente por vehículo, completá las columnas correspondientes:
-                  </p>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center bg-slate-900 p-2.5 rounded-xl text-xs">
-                      <span className="font-bold text-slate-400">vehiculo_marca:</span>
-                      <span className="font-mono text-amber-300 font-bold">TOYOTA, VOLKSWAGEN, FORD...</span>
-                    </div>
-
-                    <div className="flex justify-between items-center bg-slate-900 p-2.5 rounded-xl text-xs">
-                      <span className="font-bold text-slate-400">vehiculo_modelo:</span>
-                      <span className="font-mono text-amber-300 font-bold">HILUX, AMAROK, RANGER...</span>
-                    </div>
-
-                    <div className="flex justify-between items-center bg-slate-900 p-2.5 rounded-xl text-xs">
-                      <span className="font-bold text-slate-400">vehiculo_version:</span>
-                      <span className="font-mono text-slate-300">2.8 TDi, 2.0 BiTurbo...</span>
-                    </div>
-
-                    <div className="flex justify-between items-center bg-slate-900 p-2.5 rounded-xl text-xs">
-                      <span className="font-bold text-slate-400">vehiculo_año:</span>
-                      <span className="font-mono text-slate-300">2016-2023, 2010+</span>
-                    </div>
-                  </div>
-
-                  <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl text-[11px] text-purple-300 font-semibold flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 shrink-0 text-purple-400" />
-                    <span>Consolidador Inteligente: Elimina nombres repetidos en el modelo (ej: <code className="text-white">VOLKSWAGEN Gol IV</code> ➔ Modelo: <code className="text-white">Gol</code>, Versión: <code className="text-white">Gen IV</code>).</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 4: PREGUNTAS FRECUENTES (FAQ) */}
-            {activeTutorialTab === 'faq' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
-                <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-2">
-                  <h4 className="text-xs font-black text-white flex items-center gap-2">
-                    <HelpCircle className="w-4 h-4 text-emerald-400" />
-                    <span>¿Qué sucede si un producto de la planilla ya existe en el sistema?</span>
-                  </h4>
-                  <p className="text-[11px] text-slate-400 font-semibold leading-relaxed">
-                    El sistema detectará que ya existe (etiqueta <strong className="text-sky-400">🔵 ACTUALIZA</strong>) y actualizará su precio, categoría, marca y descripción sin borrar las equivalencias o vehículos asociados previamente.
-                  </p>
-                </div>
-
-                <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-2">
-                  <h4 className="text-xs font-black text-white flex items-center gap-2">
-                    <HelpCircle className="w-4 h-4 text-amber-400" />
-                    <span>¿Qué pasa si la celda de precio está vacía?</span>
-                  </h4>
-                  <p className="text-[11px] text-slate-400 font-semibold leading-relaxed">
-                    Si no asignás un número en el precio, el producto quedará etiquetado como <strong className="text-white">"Consultar Precio"</strong> en la web pública, invitando a los clientes a consultar por WhatsApp.
-                  </p>
-                </div>
-
-                <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-2">
-                  <h4 className="text-xs font-black text-white flex items-center gap-2">
-                    <HelpCircle className="w-4 h-4 text-purple-400" />
-                    <span>¿Cómo se importan los Kits de Filtros?</span>
-                  </h4>
-                  <p className="text-[11px] text-slate-400 font-semibold leading-relaxed">
-                    Podés crear el producto asignando la categoría <code className="text-amber-300 font-mono">Kits de Filtros</code> y un código que empiece con KIT (ej: <code className="text-amber-300 font-mono">KIT-01</code>). Luego podés asociar sus componentes individuales desde el panel del producto.
-                  </p>
-                </div>
-
-                <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-2">
-                  <h4 className="text-xs font-black text-white flex items-center gap-2">
-                    <HelpCircle className="w-4 h-4 text-sky-400" />
-                    <span>¿Puedo subir archivos comprimidos o fotos en el Excel?</span>
-                  </h4>
-                  <p className="text-[11px] text-slate-400 font-semibold leading-relaxed">
-                    Las fotos de los productos se suben directamente desde el administrador de cada producto usando el cargador automático que comprime las imágenes a formato WebP (≤100KB).
-                  </p>
+                  <button
+                    onClick={handleEjecutarImportacionProductos}
+                    disabled={importing || parsedProductos.length === 0}
+                    className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-900/40 transition-all disabled:opacity-50"
+                  >
+                    {importing ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Importando ({progress}%)...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Confirmar e Importar {parsedProductos.length} Productos</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
             )}
           </div>
-        )}
-      </div>
 
-
-      {/* ÁREA DE CARGA Y DROPAZONE */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 shadow-2xl space-y-6">
-        <div
-          onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-slate-700 hover:border-emerald-500/60 bg-slate-950/60 hover:bg-slate-950 rounded-xl p-10 text-center cursor-pointer transition-all duration-300 group flex flex-col items-center justify-center space-y-3"
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx, .xls, .csv"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-
-          <div className="w-16 h-16 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-            {readingFile ? <Loader2 className="w-8 h-8 animate-spin" /> : <Upload className="w-8 h-8" />}
-          </div>
-
-          <div>
-            <h3 className="text-base font-black text-white group-hover:text-emerald-400 transition-colors">
-              {fileName ? fileName : 'Hacé clic o arrastrá tu planilla de Excel (.xlsx) o CSV aquí'}
-            </h3>
-            <p className="text-xs font-semibold text-slate-400 mt-1">
-              Soporta columnas de código, título, categoría, marca, precio, dimensiones, descripción, equivalencias y vehículo.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* TABLA DE PREVISUALIZACIÓN DE FILAS DETECTADAS */}
-      {parsedRows.length > 0 && (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-2xl space-y-6 animate-fade-in">
-          {/* RESUMEN DE FILAS */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
-            <div>
-              <h2 className="text-base font-black text-white tracking-tight flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-400" />
-                <span>Previsualización de Datos Detectados ({parsedRows.length} repuestos)</span>
-              </h2>
-              <p className="text-xs font-semibold text-slate-400 mt-0.5">
-                Revisá los datos leídos antes de enviarlos a la base de datos de producción.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-black px-3 py-1 rounded-full">
-                {nuevosCount} Nuevos a Crear
-              </span>
-              <span className="bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-black px-3 py-1 rounded-full">
-                {existentesCount} Existentes a Actualizar
-              </span>
-            </div>
-          </div>
-
-          {/* PROGRESS BAR SI ESTÁ IMPORTANDO */}
+          {/* BARRA DE PROGRESO DE IMPORTACIÓN */}
           {importing && (
-            <div className="space-y-2 bg-slate-950 p-4 rounded-lg border border-slate-800">
-              <div className="flex items-center justify-between text-xs font-black text-white">
-                <span className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
-                  <span>Procesando e importando productos...</span>
-                </span>
-                <span className="text-emerald-400">{progress}%</span>
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+                <span>Guardando productos en Supabase...</span>
+                <span className="text-blue-400">{progress}%</span>
               </div>
-              <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
                 <div
-                  className="bg-gradient-to-r from-blue-500 to-emerald-400 h-full transition-all duration-300"
+                  className="h-full bg-gradient-to-r from-blue-600 to-sky-400 transition-all duration-200"
                   style={{ width: `${progress}%` }}
                 />
               </div>
             </div>
           )}
 
-          {/* TABLA PREVIEW */}
-          <div className="overflow-x-auto max-h-96 overflow-y-auto border border-slate-800 rounded-lg">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-950 text-[11px] font-black uppercase text-slate-400 border-b border-slate-800 sticky top-0 z-10">
-                  <th className="p-3">Estado</th>
-                  <th className="p-3">Código</th>
-                  <th className="p-3">Título / Descripción</th>
-                  <th className="p-3">Categoría / Marca</th>
-                  <th className="p-3">Precio ($)</th>
-                  <th className="p-3">Dimensiones</th>
-                  <th className="p-3">Vehículo Asociado</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60 text-xs font-medium">
-                {parsedRows.slice(0, 50).map((row, idx) => (
-                  <tr key={idx} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="p-3 whitespace-nowrap">
-                      {row.status === 'nuevo' ? (
-                        <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-black px-2 py-0.5 rounded-md">
-                          NUEVO
-                        </span>
-                      ) : (
-                        <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] font-black px-2 py-0.5 rounded-md">
-                          ACTUALIZA
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-3 font-mono font-black text-white whitespace-nowrap">
-                      {row.codigo_filtrar}
-                    </td>
-                    <td className="p-3 text-slate-200 min-w-[200px]">
-                      <span className="font-bold block truncate">{row.titulo_producto || row.codigo_filtrar}</span>
-                      <span className="text-[10px] text-slate-400 truncate block">{row.descripcion_aplicacion}</span>
-                    </td>
-                    <td className="p-3 text-slate-300 whitespace-nowrap">
-                      <span className="block font-bold">{row.categoria}</span>
-                      <span className="text-[10px] text-slate-400">{row.marca_filtro}</span>
-                    </td>
-                    <td className="p-3 font-bold text-emerald-400 whitespace-nowrap">
-                      {row.precio ? `$ ${row.precio.toLocaleString('es-AR')}` : '-'}
-                    </td>
-                    <td className="p-3 font-mono text-[11px] text-slate-300 max-w-[150px] truncate">
-                      {row.dimensiones || '-'}
-                    </td>
-                    <td className="p-3 text-slate-300 text-[11px] whitespace-nowrap">
-                      {row.vehiculo_marca && row.vehiculo_modelo ? (
-                        <span className="font-bold text-sky-400">
-                          {row.vehiculo_marca} {row.vehiculo_modelo} {row.vehiculo_version}
-                        </span>
-                      ) : (
-                        <span className="text-slate-500">-</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {/* TARJETAS DE ESTADÍSTICAS DEL ARCHIVO ANALIZADO */}
+          {parsedProductos.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-sm">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+                  Total Detectados
+                </span>
+                <div className="text-xl font-bold text-white font-mono">{parsedProductos.length}</div>
+                <span className="text-[10px] text-slate-500 block mt-1">Filas listas para procesar</span>
+              </div>
 
-          {parsedRows.length > 50 && (
-            <p className="text-center text-[11px] font-bold text-slate-400 pt-1">
-              Mostrando las primeras 50 filas de {parsedRows.length} repuestos cargados. Todos los repuestos serán procesados al presionar el botón de abajo.
-            </p>
+              <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-sm">
+                <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider block mb-1">
+                  🟢 Nuevos Productos
+                </span>
+                <div className="text-xl font-bold text-emerald-400 font-mono">
+                  {parsedProductos.filter((p) => p.status === 'nuevo').length}
+                </div>
+                <span className="text-[10px] text-slate-500 block mt-1">Se crearán en el catálogo</span>
+              </div>
+
+              <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-sm">
+                <span className="text-[11px] font-semibold text-sky-400 uppercase tracking-wider block mb-1">
+                  🔵 Existentes a Actualizar
+                </span>
+                <div className="text-xl font-bold text-sky-400 font-mono">
+                  {parsedProductos.filter((p) => p.status === 'existente').length}
+                </div>
+                <span className="text-[10px] text-slate-500 block mt-1">Actualizarán precio y datos</span>
+              </div>
+            </div>
           )}
 
-          {/* ACCIÓN BOTÓN EJECUTAR */}
-          <div className="flex items-center justify-end gap-4 pt-4 border-t border-slate-800">
-            <button
-              onClick={() => {
-                setParsedRows([]);
-                setFileName(null);
-              }}
-              disabled={importing}
-              className="px-5 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-lg transition-all disabled:opacity-50"
-            >
-              Cancelar
-            </button>
+          {/* PREVIEW TABULAR DE PRODUCTOS */}
+          {parsedProductos.length > 0 && (
+            <div className="bg-slate-900/90 border border-slate-800 rounded-xl overflow-hidden shadow-sm space-y-3 p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <Tag className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Previsualización de Productos (Página {previewPageProd} de {Math.ceil(parsedProductos.length / ITEMS_PER_PAGE)})</span>
+                </h3>
 
-            <button
-              onClick={handleEjecutarImportacion}
-              disabled={importing}
-              className="px-8 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-lg flex items-center gap-2 transition-all shadow-lg shadow-emerald-600/25 disabled:opacity-50"
-            >
-              {importing ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Importando ({progress}%)...</span>
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4" />
-                  <span>Iniciar Importación Masiva ({parsedRows.length} productos)</span>
-                </>
-              )}
-            </button>
-          </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setPreviewPageProd((p) => Math.max(1, p - 1))}
+                    disabled={previewPageProd === 1}
+                    className="px-2 py-1 bg-slate-800 hover:bg-slate-750 text-slate-300 disabled:opacity-40 text-xs rounded"
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    onClick={() => setPreviewPageProd((p) => Math.min(Math.ceil(parsedProductos.length / ITEMS_PER_PAGE), p + 1))}
+                    disabled={previewPageProd >= Math.ceil(parsedProductos.length / ITEMS_PER_PAGE)}
+                    className="px-2 py-1 bg-slate-800 hover:bg-slate-750 text-slate-300 disabled:opacity-40 text-xs rounded"
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[10px] border-b border-slate-800">
+                    <tr>
+                      <th className="p-2.5">Estado</th>
+                      <th className="p-2.5">Código</th>
+                      <th className="p-2.5">Título / Descripción</th>
+                      <th className="p-2.5">Categoría</th>
+                      <th className="p-2.5">Marca</th>
+                      <th className="p-2.5 text-right">Precio</th>
+                      <th className="p-2.5">Equivalencias</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 font-medium text-slate-300">
+                    {paginatedProductos.map((p, idx) => (
+                      <tr key={idx} className="hover:bg-slate-850/50 transition-colors">
+                        <td className="p-2.5">
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                              p.status === 'nuevo'
+                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                                : 'bg-sky-500/10 text-sky-400 border border-sky-500/30'
+                            }`}
+                          >
+                            {p.status === 'nuevo' ? 'Nuevo' : 'Existente'}
+                          </span>
+                        </td>
+                        <td className="p-2.5 font-mono font-bold text-white">{p.codigo_filtrar}</td>
+                        <td className="p-2.5 max-w-[200px] truncate">{p.titulo_producto}</td>
+                        <td className="p-2.5 text-slate-400">{p.categoria}</td>
+                        <td className="p-2.5 text-slate-400">{p.marca_filtro}</td>
+                        <td className="p-2.5 text-right font-mono font-bold text-emerald-400">
+                          {p.precio !== null ? `$${p.precio.toLocaleString('es-AR')}` : '-'}
+                        </td>
+                        <td className="p-2.5 font-mono text-[11px] text-slate-400 max-w-[220px] truncate">
+                          {p.equivalencias || '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      <AdminToast toast={toast} onClose={() => setToast(null)} />
+      {/* ─────────────────────────────────────────────────────────────
+         CONTENIDO PESTAÑA 2: APLICACIONES DE VEHÍCULOS
+      ───────────────────────────────────────────────────────────── */}
+      {activeTab === 'vehiculos' && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* BARRA SUPERIOR DE ACCIONES */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-bold text-slate-300">Descargar Plantillas:</span>
+              <button
+                onClick={() => handleDescargarPlantillaVehiculos('service', 'xlsx')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600/20 hover:bg-violet-600/30 text-violet-300 border border-violet-500/40 text-xs font-semibold transition-colors"
+                title="Una fila por vehículo con columnas para aire, aceite, combustible y habitáculo"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Plantilla Service Completo (.xlsx)</span>
+              </button>
+
+              <button
+                onClick={() => handleDescargarPlantillaVehiculos('directo', 'xlsx')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-200 hover:text-white border border-slate-700 text-xs font-semibold transition-colors"
+                title="Una fila por asociación directa (marca, modelo, versión, año, filtro)"
+              >
+                <Download className="w-3.5 h-3.5 text-slate-400" />
+                <span>Plantilla Directa (.xlsx)</span>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleExportarVehiculosExcel}
+                disabled={exporting}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold transition-colors disabled:opacity-50"
+              >
+                {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileSpreadsheet className="w-3.5 h-3.5" />}
+                <span>Exportar Vehículos a Excel</span>
+              </button>
+            </div>
+          </div>
+
+          {/* CONTROLES DE VERIFICACIÓN INTELIGENTE */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4 text-xs">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-sky-400" />
+              <span className="font-bold text-white">Controles de Calidad y Estandarización:</span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-5">
+              <label className="flex items-center gap-2 cursor-pointer select-none text-slate-300 hover:text-white">
+                <input
+                  type="checkbox"
+                  checked={autoEstandarizarModelos}
+                  onChange={(e) => setAutoEstandarizarModelos(e.target.checked)}
+                  className="rounded bg-slate-950 border-slate-700 text-violet-600 focus:ring-0 w-4 h-4 cursor-pointer"
+                />
+                <span>Estandarizar automáticamente modelos similares (ej: <code>Hilux 2.8</code> $\rightarrow$ <code>HILUX</code>)</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer select-none text-slate-300 hover:text-white">
+                <input
+                  type="checkbox"
+                  checked={omitirDuplicadosVeh}
+                  onChange={(e) => setOmitirDuplicadosVeh(e.target.checked)}
+                  className="rounded bg-slate-950 border-slate-700 text-violet-600 focus:ring-0 w-4 h-4 cursor-pointer"
+                />
+                <span>Omitir aplicaciones idénticas que ya existen</span>
+              </label>
+            </div>
+          </div>
+
+          {/* DROPZONE CARGA DE ARCHIVO DE VEHÍCULOS */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-6 shadow-sm">
+            <input
+              ref={fileInputRefVehiculos}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={handleFileVehiculosChange}
+              className="hidden"
+              id="upload-vehiculos-input"
+            />
+
+            {!fileVehiculos ? (
+              <label
+                htmlFor="upload-vehiculos-input"
+                className="border-2 border-dashed border-slate-700/80 hover:border-violet-500/60 bg-slate-950/60 hover:bg-slate-950 rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all group text-center"
+              >
+                <div className="w-12 h-12 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Car className="w-6 h-6" />
+                </div>
+                <div>
+                  <span className="text-sm font-bold text-white group-hover:text-violet-300 block">
+                    Seleccioná o arrastrá tu planilla de Vehículos (.xlsx / .csv)
+                  </span>
+                  <span className="text-xs text-slate-400 mt-1 block">
+                    Soporta formato Service Completo (Aire, Aceite, Combustible, Habitáculo) o formato directo 1 a 1.
+                  </span>
+                </div>
+              </label>
+            ) : (
+              <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-violet-500/20 text-violet-400 border border-violet-500/30 flex items-center justify-center shrink-0">
+                    <Car className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white tracking-tight">{fileVehiculos.name}</h4>
+                    <span className="text-[11px] text-slate-400">
+                      {(fileVehiculos.size / 1024).toFixed(1)} KB · {parsedVehiculos.length} aplicaciones detectadas
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-auto">
+                  <button
+                    onClick={() => {
+                      setFileVehiculos(null);
+                      setParsedVehiculos([]);
+                      if (fileInputRefVehiculos.current) fileInputRefVehiculos.current.value = '';
+                    }}
+                    disabled={importing}
+                    className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 text-xs font-semibold border border-slate-700 transition-colors"
+                  >
+                    Cambiar Archivo
+                  </button>
+
+                  <button
+                    onClick={handleEjecutarImportacionVehiculos}
+                    disabled={importing || parsedVehiculos.length === 0}
+                    className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold shadow-md shadow-violet-900/40 transition-all disabled:opacity-50"
+                  >
+                    {importing ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Guardando ({progress}%)...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Confirmar e Importar Aplicaciones</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* BARRA DE PROGRESO DE VEHÍCULOS */}
+          {importing && (
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+                <span>Guardando aplicaciones vehiculares...</span>
+                <span className="text-violet-400">{progress}%</span>
+              </div>
+              <div className="w-full h-2 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                <div
+                  className="h-full bg-gradient-to-r from-violet-600 to-sky-400 transition-all duration-200"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* TARJETAS DE ESTADÍSTICAS DEL ARCHIVO DE VEHÍCULOS */}
+          {parsedVehiculos.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-sm">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+                  Total Asociaciones
+                </span>
+                <div className="text-xl font-bold text-white font-mono">{parsedVehiculos.length}</div>
+                <span className="text-[10px] text-slate-500 block mt-1">Compatibilidades procesadas</span>
+              </div>
+
+              <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-sm">
+                <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider block mb-1">
+                  🟢 Nuevas
+                </span>
+                <div className="text-xl font-bold text-emerald-400 font-mono">
+                  {parsedVehiculos.filter((v) => v.status === 'nuevo').length}
+                </div>
+                <span className="text-[10px] text-slate-500 block mt-1">Listas para registrar</span>
+              </div>
+
+              <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-sm">
+                <span className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider block mb-1">
+                  🟡 Similares Unificados
+                </span>
+                <div className="text-xl font-bold text-amber-400 font-mono">
+                  {parsedVehiculos.filter((v) => v.status === 'similar_estandarizado').length}
+                </div>
+                <span className="text-[10px] text-slate-500 block mt-1">Estandarizados a modelo canónico</span>
+              </div>
+
+              <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-sm">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+                  ⚪ Omitidos (Ya Existentes)
+                </span>
+                <div className="text-xl font-bold text-slate-400 font-mono">
+                  {parsedVehiculos.filter((v) => v.status === 'duplicado_omitido').length}
+                </div>
+                <span className="text-[10px] text-slate-500 block mt-1">Cero registros duplicados</span>
+              </div>
+            </div>
+          )}
+
+          {/* PREVIEW TABULAR DE VEHÍCULOS */}
+          {parsedVehiculos.length > 0 && (
+            <div className="bg-slate-900/90 border border-slate-800 rounded-xl overflow-hidden shadow-sm space-y-3 p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <Car className="w-3.5 h-3.5 text-violet-400" />
+                  <span>Previsualización de Aplicaciones (Página {previewPageVeh} de {Math.ceil(parsedVehiculos.length / ITEMS_PER_PAGE)})</span>
+                </h3>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setPreviewPageVeh((p) => Math.max(1, p - 1))}
+                    disabled={previewPageVeh === 1}
+                    className="px-2 py-1 bg-slate-800 hover:bg-slate-750 text-slate-300 disabled:opacity-40 text-xs rounded"
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    onClick={() => setPreviewPageVeh((p) => Math.min(Math.ceil(parsedVehiculos.length / ITEMS_PER_PAGE), p + 1))}
+                    disabled={previewPageVeh >= Math.ceil(parsedVehiculos.length / ITEMS_PER_PAGE)}
+                    className="px-2 py-1 bg-slate-800 hover:bg-slate-750 text-slate-300 disabled:opacity-40 text-xs rounded"
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[10px] border-b border-slate-800">
+                    <tr>
+                      <th className="p-2.5">Estado / Control</th>
+                      <th className="p-2.5">Marca</th>
+                      <th className="p-2.5">Modelo Estandarizado</th>
+                      <th className="p-2.5">Versión</th>
+                      <th className="p-2.5">Año</th>
+                      <th className="p-2.5">Filtro Asociado</th>
+                      <th className="p-2.5">Tipo Flota</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 font-medium text-slate-300">
+                    {paginatedVehiculos.map((v, idx) => (
+                      <tr key={idx} className="hover:bg-slate-850/50 transition-colors">
+                        <td className="p-2.5">
+                          {v.status === 'nuevo' && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                              Nuevo
+                            </span>
+                          )}
+                          {v.status === 'similar_estandarizado' && (
+                            <span
+                              className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30 cursor-help"
+                              title={v.motivo_status}
+                            >
+                              Similar Unificado
+                            </span>
+                          )}
+                          {v.status === 'duplicado_omitido' && (
+                            <span
+                              className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 cursor-help"
+                              title={v.motivo_status}
+                            >
+                              Omitido (Existente)
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-2.5 font-bold text-white">{v.marca}</td>
+                        <td className="p-2.5 font-bold text-sky-300">
+                          {v.modelo}
+                          {v.modelo !== v.modeloOriginal && (
+                            <span className="block text-[10px] text-slate-500 font-normal">
+                              Orig: {v.modeloOriginal}
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-2.5 text-slate-400">{v.version || '-'}</td>
+                        <td className="p-2.5 text-slate-400 font-mono">{v.año || '-'}</td>
+                        <td className="p-2.5 font-mono font-bold text-violet-300">
+                          <span className="bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded">
+                            {v.filtro_asociado}
+                          </span>
+                          {v.categoria_filtro && (
+                            <span className="ml-1.5 text-[10px] text-slate-400 font-normal">
+                              ({v.categoria_filtro})
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-2.5">
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                              v.tipo_vehiculo === 'PESADO'
+                                ? 'bg-orange-500/15 text-orange-400 border border-orange-500/30'
+                                : 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
+                            }`}
+                          >
+                            {v.tipo_vehiculo}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
