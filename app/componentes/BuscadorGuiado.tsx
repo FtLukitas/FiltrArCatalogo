@@ -25,11 +25,24 @@ import {
   ArrowRight,
   Info,
   SlidersHorizontal,
+  ChevronDown,
+  Settings2,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { Filtro } from '@/lib/types';
 import TarjetaProducto from './TarjetaProducto';
 import { TIPOS_VEHICULO, type TipoVehiculo } from '@/lib/constants';
+import { normalizarModeloBase } from '@/lib/normalization';
+import { generarUrlWhatsapp } from '@/lib/utils';
+
+export interface VersionAgrupadaConProductos {
+  id: string;
+  label: string;
+  version: string;
+  año: string | null;
+  codigos: string[];
+  productos: Filtro[];
+}
 
 /* ── CONFIGURACIÓN DE CATEGORÍAS ── */
 interface CategoriaConfig {
@@ -135,6 +148,10 @@ export default function BuscadorGuiado() {
   const [modelosDisponibles, setModelosDisponibles] = useState<string[]>([]);
   const [modeloSeleccionado, setModeloSeleccionado] = useState<string>('');
 
+  // ── Versiones agrupadas con sus productos (Opción 2: acordeones en resultados) ──
+  const [versionesConProductos, setVersionesConProductos] = useState<VersionAgrupadaConProductos[]>([]);
+  const [expandedVersions, setExpandedVersions] = useState<Record<string, boolean>>({});
+
   // ── Filtros dentro de la UI ──
   const [busquedaMarca, setBusquedaMarca] = useState('');
   const [busquedaModelo, setBusquedaModelo] = useState('');
@@ -152,12 +169,93 @@ export default function BuscadorGuiado() {
   const PAGE_SIZE = 24;
   const resultsRef = useRef<HTMLDivElement>(null);
 
+  // ── Dropdowns de refinamiento por vehículo (Solo Marca y Modelo) ──
+  const [showMarcaDropdown, setShowMarcaDropdown] = useState(false);
+  const [showModeloDropdown, setShowModeloDropdown] = useState(false);
+  const marcaDropdownRef = useRef<HTMLDivElement>(null);
+  const modeloDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Funciones para manipular acordeones de versión
+  const toggleVersion = (id: string) => {
+    setExpandedVersions((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  const expandAllVersions = () => {
+    const all: Record<string, boolean> = {};
+    versionesConProductos.forEach((v) => {
+      all[v.id] = true;
+    });
+    setExpandedVersions(all);
+  };
+
+  const collapseAllVersions = () => {
+    setExpandedVersions({});
+  };
+
+  // Cerrar dropdowns de marca y modelo al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        marcaDropdownRef.current &&
+        !marcaDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowMarcaDropdown(false);
+      }
+      if (
+        modeloDropdownRef.current &&
+        !modeloDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowModeloDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const seleccionarMarca = (m: string) => {
+    if (marcaSeleccionada === m) {
+      setMarcaSeleccionada('');
+      setModeloSeleccionado('');
+      setVersionesConProductos([]);
+      setShowMarcaDropdown(false);
+    } else {
+      setMarcaSeleccionada(m);
+      setModeloSeleccionado('');
+      setVersionesConProductos([]);
+      setShowMarcaDropdown(false);
+      setShowModeloDropdown(true);
+    }
+    setBusquedaMarca('');
+  };
+
+  const seleccionarModelo = (mod: string) => {
+    if (modeloSeleccionado === mod) {
+      setModeloSeleccionado('');
+      setVersionesConProductos([]);
+      setShowModeloDropdown(false);
+    } else {
+      setModeloSeleccionado(mod);
+      setShowModeloDropdown(false);
+    }
+    setBusquedaModelo('');
+  };
+
   // ── PASO 1: SELECCIONAR TIPO DE VEHÍCULO ──
   const handleSelectTipo = (tipo: TipoVehiculo) => {
     setTipoVehiculo(tipo);
     setCategoriaSeleccionada(null);
     setMarcaSeleccionada('');
     setModeloSeleccionado('');
+    setVersionesConProductos([]);
+    setExpandedVersions({});
+    setShowMarcaDropdown(false);
+    setShowModeloDropdown(false);
     setFiltroTextoResultados('');
     setProductos([]);
     setMarcasDisponibles([]);
@@ -169,6 +267,10 @@ export default function BuscadorGuiado() {
     setCategoriaSeleccionada(catId);
     setMarcaSeleccionada('');
     setModeloSeleccionado('');
+    setVersionesConProductos([]);
+    setExpandedVersions({});
+    setShowMarcaDropdown(false);
+    setShowModeloDropdown(false);
     setFiltroTextoResultados('');
     setPage(1);
   };
@@ -233,12 +335,19 @@ export default function BuscadorGuiado() {
           return;
         }
 
-        const list = Array.from(
-          new Set(
-            data
-              .map((r: any) => (r.modelo || '').trim())
-              .filter((m: string) => m && m.length >= 2 && m !== 'Estándar' && m !== 'GENERAL')
-          )
+        const modeloSet = new Set<string>();
+        data.forEach((r: any) => {
+          const raw = (r.modelo || '').trim();
+          if (raw) {
+            const { baseModel } = normalizarModeloBase(raw, marcaSeleccionada);
+            if (baseModel && baseModel !== 'GENERAL' && baseModel !== 'ESTÁNDAR' && baseModel.length >= 2) {
+              modeloSet.add(baseModel);
+            }
+          }
+        });
+
+        const list = Array.from(modeloSet).sort((a, b) =>
+          a.localeCompare(b, 'es', { numeric: true, sensitivity: 'base' })
         );
 
         setModelosDisponibles(list);
@@ -252,10 +361,11 @@ export default function BuscadorGuiado() {
     fetchModelos();
   }, [tipoVehiculo, marcaSeleccionada]);
 
-  // ── 3. CONSULTAR PRODUCTOS COMPATIBLES AL SELECCIONAR CATEGORÍA O REFINAR VEHÍCULO ──
+  // ── 3. CONSULTAR PRODUCTOS Y VERSIONES AL SELECCIONAR CATEGORÍA O VEHÍCULO ──
   useEffect(() => {
     if (!tipoVehiculo || !categoriaSeleccionada) {
       setProductos([]);
+      setVersionesConProductos([]);
       return;
     }
 
@@ -265,19 +375,118 @@ export default function BuscadorGuiado() {
         const catConfig = CATEGORIAS_WIZARD.find((c) => c.id === categoriaSeleccionada);
         const dbCats = catConfig?.dbValues || [];
 
-        // Caso A: Si se seleccionó una Marca o Modelo específico
-        if (marcaSeleccionada) {
+        // CASO A: Si se seleccionó Marca y Modelo -> Agrupamos por Versión (Opción 2: acordeones)
+        if (marcaSeleccionada && modeloSeleccionado) {
+          const { data: vehData, error: vehErr } = await supabase
+            .from('vehiculos_filtrar')
+            .select('version, año, filtro_asociado, modelo')
+            .eq('tipo_vehiculo', tipoVehiculo)
+            .ilike('marca', marcaSeleccionada)
+            .or(`modelo.eq.${modeloSeleccionado},modelo.ilike.${modeloSeleccionado} %,modelo.ilike.${modeloSeleccionado}-%`);
+
+          if (vehErr || !vehData || vehData.length === 0) {
+            setVersionesConProductos([]);
+            setProductos([]);
+            setLoadingProductos(false);
+            return;
+          }
+
+          const map = new Map<string, VersionAgrupadaConProductos>();
+          const allCodesSet = new Set<string>();
+
+          vehData.forEach((r: any) => {
+            let v = (r.version || '').trim();
+            let a = (r.año || '').trim();
+            if (v.toLowerCase() === 'null' || v.toLowerCase() === 'undefined') v = '';
+            if (a.toLowerCase() === 'null' || a.toLowerCase() === 'undefined') a = '';
+
+            let label = 'Versión Única / Estándar';
+            if (v && a) {
+              label = v.includes(a) ? v : `${v} (${a})`;
+            } else if (v) {
+              label = v;
+            } else if (a) {
+              label = `Año ${a}`;
+            }
+
+            if (!map.has(label)) {
+              map.set(label, {
+                id: label,
+                label,
+                version: r.version || '',
+                año: r.año || null,
+                codigos: [],
+                productos: [],
+              });
+            }
+
+            const entry = map.get(label)!;
+            const code = (r.filtro_asociado || '').trim();
+            if (code) {
+              if (!entry.codigos.includes(code)) entry.codigos.push(code);
+              allCodesSet.add(code);
+            }
+          });
+
+          if (allCodesSet.size === 0) {
+            setVersionesConProductos([]);
+            setProductos([]);
+            setLoadingProductos(false);
+            return;
+          }
+
+          const allCodes = Array.from(allCodesSet);
+          let prodQuery = supabase
+            .from('productos_filtrar')
+            .select('*')
+            .in('codigo_filtrar', allCodes)
+            .neq('activo', false);
+
+          if (dbCats.length > 0) {
+            prodQuery = prodQuery.in('categoria', dbCats);
+          }
+
+          const { data: prodData } = await prodQuery;
+          const prods = (prodData || []) as Filtro[];
+          const prodMap = new Map<string, Filtro>();
+          prods.forEach((p) => prodMap.set(p.codigo_filtrar, p));
+
+          const vList: VersionAgrupadaConProductos[] = [];
+          map.forEach((entry) => {
+            const vProds: Filtro[] = [];
+            entry.codigos.forEach((code) => {
+              const p = prodMap.get(code);
+              if (p && !vProds.some((item) => item.codigo_filtrar === p.codigo_filtrar)) {
+                vProds.push(p);
+              }
+            });
+            vProds.sort((a, b) => a.codigo_filtrar.localeCompare(b.codigo_filtrar));
+
+            if (vProds.length > 0) {
+              vList.push({
+                ...entry,
+                productos: vProds,
+              });
+            }
+          });
+
+          vList.sort((a, b) => a.label.localeCompare(b.label, 'es', { numeric: true, sensitivity: 'base' }));
+
+          setVersionesConProductos(vList);
+          setProductos(prods);
+
+          // Por defecto todos los desplegables vienen plegados
+          setExpandedVersions({});
+        } else if (marcaSeleccionada) {
+          // CASO B: Solo se seleccionó Marca (sin modelo aún)
+          setVersionesConProductos([]);
           let vehQuery = supabase
             .from('filtros_por_vehiculo_tipo')
-            .select('filtro_asociado')
+            .select('filtro_asociado, modelo')
             .eq('tipo_vehiculo', tipoVehiculo)
             .ilike('marca', marcaSeleccionada);
 
-          if (modeloSeleccionado) {
-            vehQuery = vehQuery.ilike('modelo', `%${modeloSeleccionado}%`);
-          }
-
-          const { data: vehData, error: vehErr } = await vehQuery.limit(1000);
+          const { data: vehData, error: vehErr } = await vehQuery.limit(2000);
           if (vehErr || !vehData || vehData.length === 0) {
             setProductos([]);
             setLoadingProductos(false);
@@ -306,7 +515,8 @@ export default function BuscadorGuiado() {
           res.sort((a, b) => a.codigo_filtrar.localeCompare(b.codigo_filtrar));
           setProductos(res);
         } else {
-          // Caso B: No hay marca seleccionada -> Cargar productos de esa categoría
+          // CASO C: No hay marca seleccionada -> Cargar productos generales de la categoría
+          setVersionesConProductos([]);
           let prodQuery = supabase
             .from('productos_filtrar')
             .select('*')
@@ -363,7 +573,60 @@ export default function BuscadorGuiado() {
     });
   }, [productos, filtroTextoResultados]);
 
-  // Paginación de los resultados filtrados
+  // Filtrado de versiones cuando hay marca y modelo seleccionados
+  const versionesFiltradas = useMemo(() => {
+    if (!marcaSeleccionada || !modeloSeleccionado) return [];
+    if (!filtroTextoResultados.trim()) return versionesConProductos;
+
+    const q = filtroTextoResultados.trim().toLowerCase();
+    const qCompact = q.replace(/[-_/\s.]/g, '');
+
+    return versionesConProductos
+      .map((ver) => {
+        const labelMatches = ver.label.toLowerCase().includes(q);
+        const matchingProds = ver.productos.filter((p) => {
+          const code = (p.codigo_filtrar || '').toLowerCase();
+          const codeCompact = code.replace(/[-_/\s.]/g, '');
+          const title = (p.titulo_producto || '').toLowerCase();
+          const eq = (p.equivalencias || '').toLowerCase();
+          const desc = (p.descripcion_aplicacion || '').toLowerCase();
+          const brand = (p.marca_filtro || '').toLowerCase();
+          const cat = (p.categoria || '').toLowerCase();
+
+          return (
+            code.includes(q) ||
+            codeCompact.includes(qCompact) ||
+            title.includes(q) ||
+            eq.includes(q) ||
+            desc.includes(q) ||
+            brand.includes(q) ||
+            cat.includes(q)
+          );
+        });
+
+        if (labelMatches || matchingProds.length > 0) {
+          return {
+            ...ver,
+            productos: labelMatches ? ver.productos : matchingProds,
+          };
+        }
+        return null;
+      })
+      .filter(Boolean) as VersionAgrupadaConProductos[];
+  }, [versionesConProductos, filtroTextoResultados, marcaSeleccionada, modeloSeleccionado]);
+
+  // Al buscar texto, expandir automáticamente las versiones que coincidan
+  useEffect(() => {
+    if (filtroTextoResultados.trim() && versionesFiltradas.length > 0) {
+      const exp: Record<string, boolean> = {};
+      versionesFiltradas.forEach((v) => {
+        exp[v.id] = true;
+      });
+      setExpandedVersions(exp);
+    }
+  }, [filtroTextoResultados, versionesFiltradas]);
+
+  // Paginación de los resultados planos
   const displayedProductos = useMemo(() => {
     return productosFiltradosPorTexto.slice(0, page * PAGE_SIZE);
   }, [productosFiltradosPorTexto, page]);
@@ -392,6 +655,10 @@ export default function BuscadorGuiado() {
     setCategoriaSeleccionada(null);
     setMarcaSeleccionada('');
     setModeloSeleccionado('');
+    setVersionesConProductos([]);
+    setExpandedVersions({});
+    setShowMarcaDropdown(false);
+    setShowModeloDropdown(false);
     setFiltroTextoResultados('');
     setProductos([]);
     setMarcasDisponibles([]);
@@ -487,6 +754,7 @@ export default function BuscadorGuiado() {
               type="button"
               onClick={() => {
                 setModeloSeleccionado('');
+                setVersionesConProductos([]);
                 setFiltroTextoResultados('');
               }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg shrink-0 transition-all ${
@@ -502,6 +770,7 @@ export default function BuscadorGuiado() {
           <>
             <ChevronRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />
             <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white font-bold shrink-0">
+              <Car className="w-3.5 h-3.5" />
               <span>{modeloSeleccionado}</span>
             </span>
           </>
@@ -661,7 +930,7 @@ export default function BuscadorGuiado() {
         {tipoVehiculo && categoriaSeleccionada && (
           <div ref={resultsRef} className="pt-6 border-t border-slate-800/80 animate-fade-in space-y-5">
             {/* BARRA DE REFINAMIENTOS OPCIONALES DE VEHÍCULO */}
-            <div className="bg-slate-950/80 rounded-2xl border border-slate-800 p-4 space-y-4">
+            <div className="bg-slate-950/80 rounded-2xl border border-slate-800 p-4 sm:p-5 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <SlidersHorizontal className="w-4 h-4 text-blue-400" />
@@ -669,7 +938,7 @@ export default function BuscadorGuiado() {
                     Refinar por Vehículo Específico
                   </span>
                   <span className="text-[11px] text-slate-400">
-                    (hacé clic en cualquier marca)
+                    (opcional: seleccioná marca y modelo)
                   </span>
                 </div>
 
@@ -679,6 +948,9 @@ export default function BuscadorGuiado() {
                     onClick={() => {
                       setMarcaSeleccionada('');
                       setModeloSeleccionado('');
+                      setVersionesConProductos([]);
+                      setShowMarcaDropdown(false);
+                      setShowModeloDropdown(false);
                     }}
                     className="text-xs text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1 self-start sm:self-auto"
                   >
@@ -688,146 +960,327 @@ export default function BuscadorGuiado() {
                 )}
               </div>
 
-              {/* SELECTOR / CHIPS DE TODAS LAS MARCAS DISPONIBLES */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-[11px] text-slate-400">
-                  <span className="font-bold text-slate-300">
-                    Marca ({marcasDisponibles.length} disponibles):
-                  </span>
-                  <div className="relative w-40 sm:w-56">
-                    <input
-                      type="text"
-                      value={busquedaMarca}
-                      onChange={(e) => setBusquedaMarca(e.target.value)}
-                      placeholder="Buscar marca (ej: Fiat, Scania)..."
-                      className="w-full pl-7 pr-6 py-1 bg-slate-900 text-xs text-white rounded-lg border border-slate-700 focus:border-blue-500 outline-none"
-                    />
-                    <Search className="w-3 h-3 text-slate-500 absolute left-2.5 top-2" />
-                    {busquedaMarca && (
-                      <button
-                        type="button"
-                        onClick={() => setBusquedaMarca('')}
-                        className="absolute right-2 top-1.5 text-slate-400 hover:text-white"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {loadingMarcas ? (
-                  <div className="flex items-center gap-2 py-2 text-xs text-slate-400">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
-                    <span>Cargando todas las marcas...</span>
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto custom-scrollbar p-1">
-                    {/* Botón TODAS LAS MARCAS */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMarcaSeleccionada('');
-                        setModeloSeleccionado('');
-                      }}
-                      className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-                        !marcaSeleccionada
-                          ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-400'
-                          : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
-                      }`}
-                    >
-                      Todas las Marcas ({marcasDisponibles.length})
-                    </button>
-
-                    {marcasFiltradas.map((m) => {
-                      const isSelected = marcaSeleccionada === m;
-                      return (
-                        <button
-                          key={m}
-                          type="button"
-                          onClick={() => {
-                            setMarcaSeleccionada(isSelected ? '' : m);
+              {/* SELECTORES DESPLEGABLES EN CASCADA (1. MARCA -> 2. MODELO) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* 1. SELECTOR DESPLEGABLE DE MARCA */}
+                <div ref={marcaDropdownRef} className="relative">
+                  <label className="block text-[11px] font-black text-slate-300 uppercase tracking-wider mb-2 border-l-2 border-blue-500 pl-2">
+                    1. MARCA DEL VEHÍCULO
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMarcaDropdown(!showMarcaDropdown);
+                      setShowModeloDropdown(false);
+                    }}
+                    className={`w-full p-3.5 bg-slate-900/90 border rounded-xl text-left flex items-center justify-between transition-all ${
+                      showMarcaDropdown
+                        ? 'border-blue-500 ring-2 ring-blue-500/20 bg-slate-800/80'
+                        : 'border-slate-700/80 hover:border-slate-600 hover:bg-slate-800/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 truncate pr-2">
+                      <Car className="w-4 h-4 text-blue-400 shrink-0" />
+                      <span className={`text-xs sm:text-sm font-bold truncate ${marcaSeleccionada ? 'text-white' : 'text-slate-400'}`}>
+                        {marcaSeleccionada || 'Elegí la marca...'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {marcaSeleccionada && (
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMarcaSeleccionada('');
                             setModeloSeleccionado('');
+                            setVersionesConProductos([]);
                           }}
-                          className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-                            isSelected
-                              ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-400'
-                              : 'bg-slate-800/90 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700/60'
-                          }`}
+                          className="p-1 hover:bg-slate-700 rounded-md text-slate-400 hover:text-white"
+                          title="Quitar marca"
                         >
-                          {m}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* SELECTOR DE MODELO (SI HAY MARCA ELEGIDA) */}
-              {marcaSeleccionada && (
-                <div className="pt-3 border-t border-slate-800/60 space-y-2 animate-fade-in">
-                  <div className="flex items-center justify-between text-[11px] text-slate-400">
-                    <span className="font-bold text-slate-300">
-                      Modelos de {marcaSeleccionada} ({modelosDisponibles.length}):
-                    </span>
-                    <div className="relative w-40 sm:w-56">
-                      <input
-                        type="text"
-                        value={busquedaModelo}
-                        onChange={(e) => setBusquedaModelo(e.target.value)}
-                        placeholder={`Buscar modelo de ${marcaSeleccionada}...`}
-                        className="w-full pl-7 pr-6 py-1 bg-slate-900 text-xs text-white rounded-lg border border-slate-700 focus:border-blue-500 outline-none"
-                      />
-                      <Search className="w-3 h-3 text-slate-500 absolute left-2.5 top-2" />
-                      {busquedaModelo && (
-                        <button
-                          type="button"
-                          onClick={() => setBusquedaModelo('')}
-                          className="absolute right-2 top-1.5 text-slate-400 hover:text-white"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
+                          <X className="w-3.5 h-3.5" />
+                        </span>
+                      )}
+                      {loadingMarcas ? (
+                        <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+                      ) : (
+                        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${showMarcaDropdown ? 'rotate-180 text-blue-400' : ''}`} />
                       )}
                     </div>
-                  </div>
+                  </button>
 
-                  {loadingModelos ? (
-                    <div className="flex items-center gap-2 py-2 text-xs text-slate-400">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
-                      <span>Cargando modelos de {marcaSeleccionada}...</span>
+                  {/* MENÚ DESPLEGABLE DE MARCA */}
+                  {showMarcaDropdown && (
+                    <div className="absolute left-0 right-0 top-full mt-2 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl z-50 max-h-80 overflow-hidden backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
+                      <div className="p-3 border-b border-slate-800 sticky top-0 bg-slate-900/95 z-10 space-y-2">
+                        <div className="relative">
+                          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={busquedaMarca}
+                            onChange={(e) => setBusquedaMarca(e.target.value)}
+                            placeholder="Buscar marca (ej: Fiat, Toyota, Ford)..."
+                            className="w-full pl-9 pr-7 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs font-semibold text-white placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            autoFocus
+                          />
+                          {busquedaMarca && (
+                            <button
+                              type="button"
+                              onClick={() => setBusquedaMarca('')}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
+                          <span>{marcasFiltradas.length} marcas disponibles</span>
+                          {marcaSeleccionada && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMarcaSeleccionada('');
+                                setModeloSeleccionado('');
+                                setVersionesConProductos([]);
+                                setShowMarcaDropdown(false);
+                              }}
+                              className="text-blue-400 hover:underline"
+                            >
+                              Limpiar selección
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="overflow-y-auto max-h-60 custom-scrollbar p-1.5 space-y-0.5">
+                        {/* Opción Todas las marcas */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMarcaSeleccionada('');
+                            setModeloSeleccionado('');
+                            setVersionesConProductos([]);
+                            setShowMarcaDropdown(false);
+                          }}
+                          className={`w-full px-3 py-2.5 rounded-xl text-left text-xs font-bold flex items-center justify-between transition-colors ${
+                            !marcaSeleccionada
+                              ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30'
+                              : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                          }`}
+                        >
+                          <span>Todas las Marcas ({marcasDisponibles.length})</span>
+                          {!marcaSeleccionada && <Check className="w-4 h-4 text-blue-400" />}
+                        </button>
+
+                        {marcasFiltradas.map((m) => {
+                          const isSelected = marcaSeleccionada === m;
+                          return (
+                            <button
+                              key={m}
+                              type="button"
+                              onClick={() => seleccionarMarca(m)}
+                              className={`w-full px-3 py-2.5 rounded-xl text-left text-xs font-semibold flex items-center justify-between transition-colors ${
+                                isSelected
+                                  ? 'bg-blue-600/20 text-blue-300 font-bold border border-blue-500/30'
+                                  : 'text-slate-200 hover:bg-slate-800 hover:text-white'
+                              }`}
+                            >
+                              <span>{m}</span>
+                              {isSelected && <Check className="w-4 h-4 text-blue-400" />}
+                            </button>
+                          );
+                        })}
+
+                        {marcasFiltradas.length === 0 && (
+                          <div className="p-6 text-center text-xs text-slate-400 font-medium">
+                            No se encontraron marcas con "{busquedaMarca}"
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  ) : (
-                    <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto custom-scrollbar p-1">
-                      {/* Botón TODOS LOS MODELOS */}
+                  )}
+                </div>
+
+                {/* 2. SELECTOR DESPLEGABLE DE MODELO */}
+                <div ref={modeloDropdownRef} className="relative">
+                  <label className="block text-[11px] font-black text-slate-300 uppercase tracking-wider mb-2 border-l-2 border-sky-500 pl-2">
+                    2. MODELO DEL VEHÍCULO
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!marcaSeleccionada) return;
+                      setShowModeloDropdown(!showModeloDropdown);
+                      setShowMarcaDropdown(false);
+                    }}
+                    disabled={!marcaSeleccionada}
+                    className={`w-full p-3.5 bg-slate-900/90 border rounded-xl text-left flex items-center justify-between transition-all ${
+                      !marcaSeleccionada
+                        ? 'opacity-50 cursor-not-allowed border-slate-800'
+                        : showModeloDropdown
+                        ? 'border-sky-500 ring-2 ring-sky-500/20 bg-slate-800/80'
+                        : 'border-slate-700/80 hover:border-slate-600 hover:bg-slate-800/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 truncate pr-2">
+                      <Car className="w-4 h-4 text-sky-400 shrink-0" />
+                      <span className={`text-xs sm:text-sm font-bold truncate ${modeloSeleccionado ? 'text-white' : 'text-slate-400'}`}>
+                        {modeloSeleccionado || (marcaSeleccionada ? 'Elegí el modelo...' : 'Primero elegí una marca')}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {modeloSeleccionado && (
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setModeloSeleccionado('');
+                            setVersionesConProductos([]);
+                          }}
+                          className="p-1 hover:bg-slate-700 rounded-md text-slate-400 hover:text-white"
+                          title="Quitar modelo"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </span>
+                      )}
+                      {loadingModelos ? (
+                        <Loader2 className="w-4 h-4 text-sky-400 animate-spin" />
+                      ) : (
+                        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${showModeloDropdown ? 'rotate-180 text-sky-400' : ''}`} />
+                      )}
+                    </div>
+                  </button>
+
+                  {/* MENÚ DESPLEGABLE DE MODELO */}
+                  {showModeloDropdown && marcaSeleccionada && (
+                    <div className="absolute left-0 right-0 top-full mt-2 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl z-50 max-h-80 overflow-hidden backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
+                      <div className="p-3 border-b border-slate-800 sticky top-0 bg-slate-900/95 z-10 space-y-2">
+                        <div className="relative">
+                          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={busquedaModelo}
+                            onChange={(e) => setBusquedaModelo(e.target.value)}
+                            placeholder={`Buscar modelo de ${marcaSeleccionada}...`}
+                            className="w-full pl-9 pr-7 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs font-semibold text-white placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                            autoFocus
+                          />
+                          {busquedaModelo && (
+                            <button
+                              type="button"
+                              onClick={() => setBusquedaModelo('')}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
+                          <span>{modelosFiltrados.length} modelos de {marcaSeleccionada}</span>
+                          {modeloSeleccionado && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setModeloSeleccionado('');
+                                setVersionesConProductos([]);
+                                setShowModeloDropdown(false);
+                              }}
+                              className="text-sky-400 hover:underline"
+                            >
+                              Limpiar selección
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="overflow-y-auto max-h-60 custom-scrollbar p-1.5 space-y-0.5">
+                        {/* Opción Todos los modelos */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setModeloSeleccionado('');
+                            setVersionesConProductos([]);
+                            setShowModeloDropdown(false);
+                          }}
+                          className={`w-full px-3 py-2.5 rounded-xl text-left text-xs font-bold flex items-center justify-between transition-colors ${
+                            !modeloSeleccionado
+                              ? 'bg-sky-600/20 text-sky-300 border border-sky-500/30'
+                              : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                          }`}
+                        >
+                          <span>Todos los Modelos ({modelosDisponibles.length})</span>
+                          {!modeloSeleccionado && <Check className="w-4 h-4 text-sky-400" />}
+                        </button>
+
+                        {modelosFiltrados.map((mod) => {
+                          const isSelected = modeloSeleccionado === mod;
+                          return (
+                            <button
+                              key={mod}
+                              type="button"
+                              onClick={() => seleccionarModelo(mod)}
+                              className={`w-full px-3 py-2.5 rounded-xl text-left text-xs font-semibold flex items-center justify-between transition-colors ${
+                                isSelected
+                                  ? 'bg-sky-600/20 text-sky-300 font-bold border border-sky-500/30'
+                                  : 'text-slate-200 hover:bg-slate-800 hover:text-white'
+                              }`}
+                            >
+                              <span>{mod}</span>
+                              {isSelected && <Check className="w-4 h-4 text-sky-400" />}
+                            </button>
+                          );
+                        })}
+
+                        {modelosFiltrados.length === 0 && (
+                          <div className="p-6 text-center text-xs text-slate-400 font-medium">
+                            No se encontraron modelos con "{busquedaModelo}"
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* BADGES DE FILTROS ACTIVOS */}
+              {(marcaSeleccionada || modeloSeleccionado) && (
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <span className="text-[11px] text-slate-400 font-medium">Filtro aplicado:</span>
+                  {marcaSeleccionada && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/20 border border-blue-500/40 text-blue-300 text-xs font-bold">
+                      <Car className="w-3 h-3" />
+                      <span>{marcaSeleccionada}</span>
                       <button
                         type="button"
-                        onClick={() => setModeloSeleccionado('')}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-                          !modeloSeleccionado
-                            ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-400'
-                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
-                        }`}
+                        onClick={() => {
+                          setMarcaSeleccionada('');
+                          setModeloSeleccionado('');
+                          setVersionesConProductos([]);
+                        }}
+                        className="text-blue-400 hover:text-white"
+                        title="Quitar marca"
                       >
-                        Todos los Modelos
+                        <X className="w-3.5 h-3.5" />
                       </button>
-
-                      {modelosFiltrados.map((mod) => {
-                        const isModSelected = modeloSeleccionado === mod;
-                        return (
-                          <button
-                            key={mod}
-                            type="button"
-                            onClick={() => setModeloSeleccionado(isModSelected ? '' : mod)}
-                            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-                              isModSelected
-                                ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-400'
-                                : 'bg-slate-800/90 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700/60'
-                            }`}
-                          >
-                            {mod}
-                          </button>
-                        );
-                      })}
-                    </div>
+                    </span>
+                  )}
+                  {modeloSeleccionado && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-500/20 border border-sky-500/40 text-sky-300 text-xs font-bold">
+                      <span>{modeloSeleccionado}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setModeloSeleccionado('');
+                          setVersionesConProductos([]);
+                        }}
+                        className="text-sky-400 hover:text-white"
+                        title="Quitar modelo"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </span>
                   )}
                 </div>
               )}
@@ -864,7 +1317,12 @@ export default function BuscadorGuiado() {
               {/* Resumen numérico */}
               <div className="flex items-center gap-2 text-xs font-bold text-slate-300 shrink-0">
                 <span>
-                  {filtroTextoResultados ? (
+                  {marcaSeleccionada && modeloSeleccionado ? (
+                    <>
+                      <span className="text-blue-400">{versionesFiltradas.length}</span> {versionesFiltradas.length === 1 ? 'versión' : 'versiones'} (
+                      <span className="text-emerald-400">{productos.length}</span> filtros en total)
+                    </>
+                  ) : filtroTextoResultados ? (
                     <>
                       Mostrando <span className="text-blue-400">{productosFiltradosPorTexto.length}</span> de {productos.length} filtros
                     </>
@@ -882,7 +1340,7 @@ export default function BuscadorGuiado() {
               </div>
             </div>
 
-            {/* ── LISTADO / GRILLA DE PRODUCTOS ── */}
+            {/* ── LISTADO / GRILLA DE PRODUCTOS O ACORDEONES POR VERSIÓN ── */}
             {loadingProductos ? (
               <div className="py-20 text-center flex flex-col items-center justify-center gap-3">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
@@ -890,7 +1348,176 @@ export default function BuscadorGuiado() {
                   Consultando filtros en base de datos...
                 </p>
               </div>
+            ) : marcaSeleccionada && modeloSeleccionado ? (
+              /* ── CASO MODELO SELECCIONADO: ACORDEONES POR VERSIÓN / MOTOR ── */
+              <div className="space-y-4">
+                {/* Resumen del Vehículo y Botones Expandir / Colapsar */}
+                <div className="bg-gradient-to-r from-slate-900 via-blue-950/40 to-slate-900 border border-blue-500/30 rounded-2xl p-4 sm:p-5 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 shrink-0">
+                      <Car className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs uppercase tracking-wider font-extrabold text-blue-400">
+                          Vehículo Seleccionado
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
+                          {versionesConProductos.length} {versionesConProductos.length === 1 ? 'Versión / Motor' : 'Versiones / Motores'}
+                        </span>
+                      </div>
+                      <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                        {marcaSeleccionada} <span className="text-blue-400">{modeloSeleccionado}</span>
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Hacé clic en tu motorización o versión para desplegar los filtros correspondientes a cada service.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
+                    <button
+                      type="button"
+                      onClick={expandAllVersions}
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold border border-slate-700 transition-colors"
+                    >
+                      Expandir todas
+                    </button>
+                    <button
+                      type="button"
+                      onClick={collapseAllVersions}
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold border border-slate-700 transition-colors"
+                    >
+                      Colapsar todas
+                    </button>
+                  </div>
+                </div>
+
+                {/* Lista de Acordeones por Versión */}
+                {versionesFiltradas.map((ver) => {
+                  const isExpanded = !!expandedVersions[ver.id];
+                  return (
+                    <div
+                      key={ver.id}
+                      className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
+                        isExpanded
+                          ? 'bg-slate-900/90 border-blue-500/50 shadow-xl shadow-blue-950/30'
+                          : 'bg-slate-900/50 border-slate-800 hover:border-slate-700 hover:bg-slate-900/75'
+                      }`}
+                    >
+                      {/* Encabezado del Acordeón */}
+                      <button
+                        type="button"
+                        onClick={() => toggleVersion(ver.id)}
+                        className="w-full p-4 sm:p-5 flex items-center justify-between gap-4 text-left cursor-pointer transition-colors"
+                      >
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                              isExpanded
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                                : 'bg-slate-800 text-slate-400 border border-slate-700'
+                            }`}
+                          >
+                            <Settings2 className="w-5 h-5" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h4 className="text-sm sm:text-base font-black text-white truncate">
+                                {ver.label}
+                              </h4>
+                              {ver.año && (
+                                <span className="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 text-[11px] font-semibold">
+                                  {ver.año}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                              {marcaSeleccionada} {modeloSeleccionado} {ver.version ? `• Motor ${ver.version}` : ''}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-bold border transition-colors ${
+                              isExpanded
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                : 'bg-slate-800 text-slate-400 border-slate-700'
+                            }`}
+                          >
+                            {ver.productos.length} {ver.productos.length === 1 ? 'filtro' : 'filtros'}
+                          </span>
+                          <div
+                            className={`w-8 h-8 rounded-lg bg-slate-800/80 flex items-center justify-center text-slate-400 transition-transform duration-200 ${
+                              isExpanded ? 'rotate-180 text-blue-400 bg-blue-600/20' : ''
+                            }`}
+                          >
+                            <ChevronDown className="w-4 h-4" />
+                          </div>
+                        </div>
+                      </button>
+
+                      {/* Grilla de productos al estar expandido */}
+                      {isExpanded && (
+                        <div className="px-4 pb-5 sm:px-5 sm:pb-6 pt-1 border-t border-slate-800/70 bg-slate-950/40 animate-fade-in space-y-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {ver.productos.map((filtro) => (
+                              <TarjetaProducto key={filtro.id || filtro.codigo_filtrar} filtro={filtro} />
+                            ))}
+                          </div>
+
+                          {/* Botón CTA de WhatsApp para el service de este vehículo */}
+                          <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/20 flex flex-col sm:flex-row items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 text-left">
+                              <div className="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                                <MessageCircle className="w-5 h-5" />
+                              </div>
+                              <div>
+                                <p className="text-xs font-bold text-white">
+                                  ¿Querés el Kit de Service Completo para tu {marcaSeleccionada} {modeloSeleccionado} ({ver.label})?
+                                </p>
+                                <p className="text-[11px] text-slate-400">
+                                  Te armamos el presupuesto con aceite sintético/semisintético y todos los filtros compatibles listos para colocar.
+                                </p>
+                              </div>
+                            </div>
+                            <a
+                              href={generarUrlWhatsapp(
+                                `Hola FiltrAr! Quiero consultar por el kit completo de filtros para mi ${marcaSeleccionada} ${modeloSeleccionado} versión ${ver.label}.`
+                              )}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold flex items-center gap-2 shrink-0 shadow-md shadow-emerald-950/50 transition-all"
+                            >
+                              <MessageCircle className="w-4 h-4" />
+                              <span>Pedir Kit por WhatsApp</span>
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {versionesFiltradas.length === 0 && (
+                  <div className="py-12 text-center bg-slate-950/40 rounded-2xl border border-slate-800 p-6 space-y-2">
+                    <Info className="w-8 h-8 text-slate-500 mx-auto" />
+                    <p className="text-sm font-bold text-slate-300">
+                      No se encontraron versiones ni filtros que coincidan con "{filtroTextoResultados}".
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setFiltroTextoResultados('')}
+                      className="mt-2 px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl"
+                    >
+                      Limpiar búsqueda interna
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : displayedProductos.length > 0 ? (
+              /* ── CASO GENERAL (SIN MODELO SELECCIONADO): GRILLA PLANA CON PAGINACIÓN ── */
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {displayedProductos.map((filtro) => (
@@ -898,7 +1525,6 @@ export default function BuscadorGuiado() {
                   ))}
                 </div>
 
-                {/* BOTÓN CARGAR MÁS */}
                 {canLoadMore && (
                   <div className="text-center pt-4">
                     <button
@@ -912,6 +1538,7 @@ export default function BuscadorGuiado() {
                 )}
               </>
             ) : (
+              /* Estado Vacío General */
               <div className="py-16 text-center bg-slate-950/40 rounded-2xl border border-slate-800 p-8 space-y-3">
                 <Info className="w-8 h-8 text-slate-500 mx-auto" />
                 <p className="text-sm font-bold text-slate-300">
@@ -938,6 +1565,7 @@ export default function BuscadorGuiado() {
                     onClick={() => {
                       setMarcaSeleccionada('');
                       setModeloSeleccionado('');
+                      setVersionesConProductos([]);
                     }}
                     className="mt-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl"
                   >

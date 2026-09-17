@@ -49,15 +49,35 @@ export default function HomePage() {
             <BuscadorUnificado />
           </div>
 
-          {/* ACCESO RÁPIDO AL ASISTENTE GUIADO INFERIOR */}
-          <div className="mt-5 flex items-center justify-center">
+          {/* ACCESO RÁPIDO AL ASISTENTE GUIADO INFERIOR - BOTÓN DESTACADO Y CUADRADO */}
+          <div className="mt-6 sm:mt-8 max-w-4xl mx-auto w-full">
             <a
               href="#buscador-guiado"
-              className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 hover:border-sky-500/50 text-slate-300 hover:text-white text-xs sm:text-sm font-semibold transition-all group shadow-md"
+              className="w-full group relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-4 p-4 sm:p-5 md:p-6 rounded-2xl bg-gradient-to-r from-blue-950/95 via-slate-900 to-indigo-950/95 hover:from-blue-900/90 hover:via-slate-850 hover:to-indigo-900/90 border-2 border-sky-500/60 hover:border-sky-400 text-left transition-all duration-300 shadow-2xl shadow-sky-950/50 hover:shadow-sky-500/25 hover:-translate-y-0.5 cursor-pointer"
             >
-              <Car className="w-4 h-4 text-sky-400 group-hover:scale-110 transition-transform shrink-0" />
-              <span>¿No conocés el código? <strong className="text-sky-300 group-hover:text-sky-200">Elegí tu auto en el Asistente Guiado</strong></span>
-              <ArrowDown className="w-3.5 h-3.5 text-sky-400 group-hover:translate-y-0.5 transition-transform shrink-0" />
+              {/* Resplandor decorativo de fondo */}
+              <div className="absolute top-0 right-0 -mt-8 -mr-8 w-36 h-36 bg-sky-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-sky-500/20 transition-all" />
+
+              <div className="flex items-center gap-4 sm:gap-5 min-w-0 w-full sm:w-auto">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-sky-500/20 border border-sky-400/40 text-sky-300 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-sky-500/30 transition-all shadow-inner">
+                  <Car className="w-6 h-6 sm:w-7 sm:h-7 text-sky-300" />
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs sm:text-sm font-extrabold text-sky-400 uppercase tracking-wider flex items-center gap-1.5 mb-0.5">
+                    ¿No conocés el código?
+                  </span>
+                  <span className="text-base sm:text-xl font-black text-white group-hover:text-sky-200 transition-colors tracking-tight">
+                    Elegí tu auto en el Asistente Guiado
+                  </span>
+                </div>
+              </div>
+
+              <div className="w-full sm:w-auto flex items-center justify-center sm:justify-end shrink-0 pt-2 sm:pt-0 border-t border-slate-800 sm:border-t-0">
+                <span className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-sky-500 group-hover:bg-sky-400 text-slate-950 font-black text-xs sm:text-sm uppercase tracking-wider transition-all shadow-lg shadow-sky-500/30 group-hover:bg-sky-300 group-hover:shadow-sky-400/40">
+                  <span>Ir al Asistente</span>
+                  <ArrowDown className="w-4 h-4 group-hover:translate-y-1 transition-transform" />
+                </span>
+              </div>
             </a>
           </div>
 

@@ -295,12 +295,8 @@ export default function BuscadorVehiculo() {
 
         setVersiones(versionesOrdenadas);
 
-        // Auto-expand first version if single version
-        if (versionesOrdenadas.length === 1) {
-          setVersionExpandida(`${versionesOrdenadas[0].version}|||${versionesOrdenadas[0].año}`);
-        } else {
-          setVersionExpandida(null);
-        }
+        // Por defecto todas las versiones vienen plegadas
+        setVersionExpandida(null);
 
       } catch (err) {
         console.error('Error cargando versiones:', err);

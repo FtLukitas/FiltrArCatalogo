@@ -281,12 +281,8 @@ export default function BuscadorUnificado({ onSelectProduct, initialValue = '' }
         const listaVehiculos = Array.from(groupMap.values());
         setVehiculoGrupos(listaVehiculos);
 
-        // Si hay solo 1 grupo de vehículo, auto-expandirlo
-        if (listaVehiculos.length === 1) {
-          setExpandedVehiculoKey(listaVehiculos[0].key);
-        } else {
-          setExpandedVehiculoKey(null);
-        }
+        // Por defecto todos los desplegables de vehículos vienen plegados
+        setExpandedVehiculoKey(null);
 
         // ── B. ENRIQUECER EQUIVALENCIAS CON DATOS DEL PRODUCTO FILTRAR ──
         const listaEquivs: EquivalenciaCoincidencia[] = rawEquivs.map((eq: any) => ({

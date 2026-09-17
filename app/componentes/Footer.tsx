@@ -50,7 +50,7 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="#vehiculo-section" className="hover:text-blue-400 transition-colors flex items-center gap-1">
+                <a href="/#buscador-guiado" className="hover:text-blue-400 transition-colors flex items-center gap-1">
                   <ChevronRight className="w-3 h-3 text-blue-500" />
                   Búsqueda por Vehículo
                 </a>

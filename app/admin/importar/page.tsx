@@ -36,6 +36,8 @@ import {
   sanitizarEquivalenciasTexto,
   sanitizarVehiculo,
   normalizarCodigoCruza,
+  normalizarMarcaMercadoArgentino,
+  esModeloAdmisibleMercadoArgentino,
 } from '@/lib/normalization';
 import { classifyVehicleType } from '@/lib/validation';
 import AdminToast, { ToastMessage } from '../componentes/AdminToast';
@@ -736,13 +738,22 @@ export default function AdminImportarPage() {
 
         // 5. Verificar duplicados por cada filtro
         itemsToCreate.forEach((item) => {
+          const canonMarcaArg = normalizarMarcaMercadoArgentino(marcaClean);
+          const esModeloArg = esModeloAdmisibleMercadoArgentino(modeloFinal);
+
           const sig = `${marcaClean}__${modeloFinal}__${versionClean.toUpperCase()}__${añoClean.toUpperCase()}__${item.filtro}`;
           const isDuplicado = existingSignatures.has(sig);
 
           let finalStatus: 'nuevo' | 'similar_estandarizado' | 'duplicado_omitido' = statusModelo;
           let motivo = undefined;
 
-          if (isDuplicado) {
+          if (!canonMarcaArg) {
+            finalStatus = 'duplicado_omitido';
+            motivo = `Marca "${marcaClean}" no admitida: no pertenece al parque vehicular del mercado argentino.`;
+          } else if (!esModeloArg) {
+            finalStatus = 'duplicado_omitido';
+            motivo = `Modelo "${modeloFinal}" no admitido: modelo foráneo o residuo no perteneciente al mercado argentino.`;
+          } else if (isDuplicado) {
             finalStatus = 'duplicado_omitido';
             motivo = 'Aplicación ya existente en la base de datos (se omite para no duplicar).';
           } else if (statusModelo === 'similar_estandarizado') {

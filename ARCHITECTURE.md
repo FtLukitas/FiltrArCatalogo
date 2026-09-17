@@ -191,3 +191,18 @@ graph LR
 - **Login Administrativo (`/admin/login`):** Validación de credenciales contra Supabase Auth mediante sesión JWT segura (sin secretos expuestos en el cliente).
 - **Protección por Middleware (`middleware.ts`):** Redirección automática de rutas `/admin/*` hacia `/admin/login` para sesiones no autenticadas.
 - **Row Level Security (RLS):** Lectura pública para el catálogo de clientes (`anon`), escritura restringida a usuarios autenticados (`authenticated`).
+
+---
+
+## 6. Invariante de Negocio: Enfoque Exclusivo en el Mercado Argentino
+
+En cualquier flujo de **scraping**, **importación** o **sincronización** de aplicaciones vehiculares, el catálogo se restringe **exclusivamente al parque automotor, de transporte pesado y agroindustrial comercializado y circulante en la República Argentina**:
+
+1. **Módulo Central de Validación (`lib/argentinaMarket.ts` / `lib/normalization.ts`):**
+   - Expone `sanitizarAplicacionMercadoArgentino`, `normalizarMarcaMercadoArgentino` y `esModeloAdmisibleMercadoArgentino`.
+   - Implementa la whitelist de 74 marcas nacionales aprobadas y la blacklist de modelos foráneos no vendidos en el país.
+
+2. **Prohibición de Marcas y Modelos Foráneos:**
+   - **Marcas Prohibidas:** *VDL Bus, GINAF, Opel, Vauxhall, Dacia, Kramer Allrad, Evobus, Van Hool, DAF Trucks, MAN Truck, etc.*
+   - **Modelos Prohibidos:** *Renault Talisman/Modus/Lodgy, VW Lupo/Phaeton/Touran, Fiat Multipla/Sedici/Barchetta, Ford B-Max/C-Max, Peugeot 1007/107/108, Citroën C1/C2, Toyota Aygo/ProAce, Mercedes Citan, etc.*
+   - **Basura de Catálogo:** Queda prohibido el almacenamiento de números de piezas (`17801-62010`, `FAPA8240`), textos de taller (`DESGASIFICADOR`, `DIRECCION HIDRAULICA`) o cadenas con marcas múltiples en una sola celda.

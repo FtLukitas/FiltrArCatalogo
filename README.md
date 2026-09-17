@@ -58,6 +58,20 @@ python scratch/push_all_to_supabase.py
 
 # Normalización de marcas y categorías
 python scratch/phase4_normalize_categories.py
+```
+
+---
+
+## 🇦🇷 Política Estricta de Scraping y Datos: Mercado Argentino
+
+En cualquier flujo de **scraping**, **importación masiva** o **sincronización** de aplicaciones vehiculares:
+- **Respeto exclusivo del mercado nacional:** Solo se admiten vehículos, transporte pesado y maquinaria agrícola/vial que circule o se comercialice en la República Argentina.
+- **Prohibición de marcas foráneas:** Marcas sin presencia en el país (ej: *VDL Bus, GINAF, Opel, Vauxhall, Dacia, Kramer Allrad, Evobus, Van Hool, DAF Trucks*) quedan estrictamente excluidas.
+- **Prohibición de modelos foráneos:** Modelos que nunca ingresaron al país (ej: *Renault Talisman/Modus, VW Lupo/Touran, Fiat Multipla/Sedici, Ford B-Max/C-Max, Peugeot 1007/107, Citroën C1/C2, Toyota Aygo/ProAce, Mercedes Citan*) quedan prohibidos.
+- **Cero basura de catálogo:** Queda prohibido ingresar números de parte o descripciones de taller como nombre de modelo.
+- **Módulo validador:** Usar siempre `lib/argentinaMarket.ts` (`sanitizarAplicacionMercadoArgentino`) re-exportado en `lib/normalization.ts`.
+
+```bash
 python scratch/phase5_fix_brand_typos.py
 
 # Typecheck y compilación del proyecto Next.js

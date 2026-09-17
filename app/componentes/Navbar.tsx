@@ -48,7 +48,16 @@ export default function Navbar() {
             </Link>
 
             <Link
-              href="/#vehiculo-section"
+              href="/#buscador-guiado"
+              onClick={(e) => {
+                if (typeof window !== 'undefined' && window.location.pathname === '/') {
+                  const el = document.getElementById('buscador-guiado');
+                  if (el) {
+                    e.preventDefault();
+                    el.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }
+              }}
               className="px-3.5 py-2 rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all flex items-center gap-2 group"
             >
               <Filter className="w-4 h-4 text-blue-600 group-hover:scale-110 transition-transform" />
@@ -102,8 +111,17 @@ export default function Navbar() {
           </Link>
 
           <Link
-            href="/#vehiculo-section"
-            onClick={() => setMobileMenuOpen(false)}
+            href="/#buscador-guiado"
+            onClick={(e) => {
+              setMobileMenuOpen(false);
+              if (typeof window !== 'undefined' && window.location.pathname === '/') {
+                const el = document.getElementById('buscador-guiado');
+                if (el) {
+                  e.preventDefault();
+                  el.scrollIntoView({ behavior: 'smooth' });
+                }
+              }
+            }}
             className="flex items-center gap-3 p-3 rounded-xl hover:bg-blue-50 text-slate-800 font-extrabold text-xs transition-colors"
           >
             <Filter className="w-4 h-4 text-blue-600" />

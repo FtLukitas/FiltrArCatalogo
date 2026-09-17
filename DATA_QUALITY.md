@@ -137,6 +137,7 @@ equivalencias_cruza
 > 3. **NO borrar nunca** el valor original de `descripcion_aplicacion`.
 > 4. **Respetar la Regla de Oro de `marcas_unicas`:** Jamás guardar códigos de repuesto, cilindradas o texto web en `vehiculos_filtrar.marca`.
 > 5. **CERO SQL Crudo:** Utilizar transaccionalidad atómica y evaluar impacto previo.
+> 6. **Respetar Estrictamente el Mercado Argentino:** Al scrappear datos de catálogos web (WEGA, MANN-FILTER, Maxfil, Fram, etc.) o importar archivos, queda estrictamente prohibido incorporar marcas foráneas (VDL, GINAF, Opel, Vauxhall, Dacia, Kramer, etc.), modelos no comercializados en el país (Talisman, Lupo, Multipla, B-Max, etc.) o basura de catálogos. Es obligatorio validar con `lib/argentinaMarket.ts` (`sanitizarAplicacionMercadoArgentino`).
 
 ---
 
